@@ -8,7 +8,13 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from predicates import PredicateError, evaluate_all, evaluate_predicate, parse_predicate  # noqa: E402
 
-ONTOMAP_BUNDLE = ROOT.parent / "ontomap-validation"
+ONTOMAP_BUNDLE = next(
+    (p for p in (
+        ROOT.parent / "ontomap-validation",
+        Path.home() / "Documents/Codex/2026-09-21/bas/outputs/ontomap-validation",
+    ) if p.is_dir()),
+    ROOT.parent / "ontomap-validation",
+)
 
 
 def bundle_predicates(bundle: Path) -> list[str]:
