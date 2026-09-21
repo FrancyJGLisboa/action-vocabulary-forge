@@ -1,0 +1,25 @@
+schema_version: '1.0'
+system_id: validation_example
+decision_surfaces:
+- surface_id: resolve_validation_failure
+  description: Choose the next step after a validation failure.
+  activation:
+    state_id: validation_failed
+  candidate_actions:
+  - action_id: retry
+    criterion: Failure appears transient and retry budget remains.
+    evidence_refs:
+    - runbook_retry
+    - trace_retry_01
+  - action_id: human_review
+    criterion: Failure is ambiguous or retry is unsafe.
+    evidence_refs:
+    - runbook_review
+    - trace_review_01
+  fallback_action: human_review
+  abstention_choice: human_review
+  production: true
+  evidence_refs:
+  - runbook_retry
+  - runbook_review
+  - trace_failed_01

@@ -1,0 +1,21 @@
+schema_version: '1.0'
+system_id: validation_example
+states:
+- state_id: validation_pending
+  description: A validation run is in progress.
+  observable_predicate: validation_status == 'pending'
+  entry_evidence_refs:
+  - trace_pending_01
+  terminal: false
+- state_id: validation_failed
+  description: The latest validation run failed.
+  observable_predicate: validation_status == 'failed'
+  entry_evidence_refs:
+  - trace_failed_01
+  terminal: false
+- state_id: awaiting_human_review
+  description: Automation is paused and a review ticket is open.
+  observable_predicate: review_ticket_open == true
+  entry_evidence_refs:
+  - trace_review_state
+  terminal: false

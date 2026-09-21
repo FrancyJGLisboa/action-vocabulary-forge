@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Refuse a commit that breaks the tests, ships an invalid example bundle, or
+# lets examples/validation-bundle drift from init_action_bundle.py --example.
+# Enabled by:  git config core.hooksPath .githooks
+set -u
+cd "$(git rev-parse --show-toplevel)"
+fail=0
+say() { printf '  %s\n' "$1"; }
+
+if ! out=$(python3 -m unittest discover -s tests 2>&1); then
+  printf '%s\n' "$out" | tail -20 | sed 's/^/  /'
+  say "tests failed."
+  fail=1
+fi
+
+if ! out=$(python3 scripts/validate_action_bundle.py examples/validation-bundle 2>&1); then
+  printf '%s\n' "$out" | sed 's/^/  /'
+  say "examples/validation-bundle is invalid."
+  fail=1
+fi
+
+tmp=$(mktemp -d)
+python3 scripts/init_action_bundle.py "$tmp/bundle" --example >/dev/null 2>&1
+if ! diff -rq "$tmp/bundle" examples/validation-bundle >/dev/null 2>&1; then
+  say "examples/validation-bundle drifted from init_action_bundle.py --example."
+  say "   regenerate:  python3 scripts/init_action_bundle.py examples/validation-bundle --example --force"
+  fail=1
+fi
+rm -rf "$tmp"
+
+if [ "$fail" != "0" ]; then
+  echo
+  echo "  pre-commit refused. Fix the above, or --no-verify if you mean it."
+  exit 1
+fi
+exit 0

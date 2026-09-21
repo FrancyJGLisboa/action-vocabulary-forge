@@ -1,0 +1,18 @@
+schema_version: '1.0'
+system_id: validation_example
+provider: vendor_neutral
+policy:
+  min_confidence: 0.85
+classifier_questions:
+- question_id: next_validation_action
+  surface_id: resolve_validation_failure
+  type: choice
+  instruction: Select the action whose criterion best matches the evidence.
+  choices:
+  - id: retry
+    criterion: Failure appears transient and retry budget remains.
+    executor_action_id: retry
+  - id: human_review
+    criterion: Failure is ambiguous or retry is unsafe.
+    executor_action_id: human_review
+  abstention_choice: human_review

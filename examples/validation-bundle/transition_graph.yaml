@@ -1,0 +1,22 @@
+schema_version: '1.0'
+system_id: validation_example
+transitions:
+- transition_id: retry_failed_validation
+  source_state: validation_failed
+  action_id: retry
+  destination_state: validation_pending
+  guard:
+  - retry_budget > 0
+  - record_exists == true
+  outcome: validation_run_started
+  evidence_refs:
+  - trace_retry_01
+- transition_id: review_failed_validation
+  source_state: validation_failed
+  action_id: human_review
+  destination_state: awaiting_human_review
+  guard:
+  - unresolved_failure == true
+  outcome: review_ticket_created
+  evidence_refs:
+  - trace_review_01

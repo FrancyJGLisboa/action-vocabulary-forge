@@ -1,0 +1,16 @@
+schema_version: '1.0'
+discovery_mode: illustrative
+source_root: docs/validation.md
+review_required: true
+surface_candidates:
+- candidate_id: validation_failure_next_action
+  input_description: Validation failure context and retry budget.
+  observed_options:
+  - retry
+  - human_review
+  bounded_output: true
+  semantic_interpretation_required: true
+  current_implementation: workflow_branch
+  replacement_strength: strong
+  source_locator: docs/validation.md#failure
+  review_status: promoted
