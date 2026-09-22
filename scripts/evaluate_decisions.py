@@ -179,7 +179,9 @@ def main(argv: list[str] | None = None) -> int:
     for key in ("action_recall", "action_precision", "surface_coverage", "boundary_accuracy", "abstention_accuracy", "illegal_action_rate", "jev_accuracy", "replacement_rate"):
         print(f"  {key:22} {fmt(metrics[key])}")
     lat = metrics["latency_ms"]
-    print(f"  {'latency_ms':22} mean={'n/a' if lat['mean'] is None else f'{lat['mean']:.1f}'} p95={'n/a' if lat['p95'] is None else f'{lat['p95']:.1f}'}")
+    mean_ms = "n/a" if lat["mean"] is None else format(lat["mean"], ".1f")
+    p95_ms = "n/a" if lat["p95"] is None else format(lat["p95"], ".1f")
+    print("  {:22} mean={} p95={}".format("latency_ms", mean_ms, p95_ms))
     print(f"  {'usage':22} {metrics['usage'] or 'n/a'}")
     print(f"  {'deterministic':22} {fmt(metrics['deterministic'])} decided by code, agreement with labels (must be 100%)")
     if deterministic and det_agree != len(deterministic):
@@ -196,7 +198,10 @@ def main(argv: list[str] | None = None) -> int:
             for model_name, subset in sorted(by_model.items()):
                 m = log_metrics(subset, questions, static["registry_actions"])
                 p95 = m["latency_ms"]["p95"]
-                print(f"  {model_name:28} {len(subset):4d}  {fmt(m['jev_accuracy']):>14}  {fmt(m['boundary_accuracy']):>12}  {fmt(m['abstention_accuracy']):>12}  {m['illegal_action_rate']['count']:8d}  {'n/a' if p95 is None else f'{p95:.0f}':>7}")
+                p95_text = "n/a" if p95 is None else format(p95, ".0f")
+                print("  {:28} {:4d}  {:>14}  {:>12}  {:>12}  {:8d}  {:>7}".format(
+                    model_name, len(subset), fmt(m["jev_accuracy"]), fmt(m["boundary_accuracy"]),
+                    fmt(m["abstention_accuracy"]), m["illegal_action_rate"]["count"], p95_text))
             metrics["by_model"] = {name: {k: log_metrics(subset, questions, static["registry_actions"])[k] for k in ("jev_accuracy", "boundary_accuracy", "abstention_accuracy", "illegal_action_rate", "latency_ms")} for name, subset in by_model.items()}
     print()
     print("RELEASE GATE: " + ("APPROVE" if approved else "HOLD"))

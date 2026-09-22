@@ -178,3 +178,19 @@ class EvaluateTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PortabilityTests(unittest.TestCase):
+    """The README claims Python 3.11+; nested same-quote f-strings are 3.12+ only."""
+
+    def test_every_script_parses_under_python_311(self):
+        import ast
+        import sys
+        scripts = sorted((ROOT / "scripts").glob("*.py"))
+        self.assertTrue(scripts)
+        for path in scripts:
+            with self.subTest(script=path.name):
+                try:
+                    ast.parse(path.read_text(encoding="utf-8"), feature_version=(3, 11))
+                except SyntaxError as exc:
+                    self.fail(f"{path.name} does not parse on Python 3.11: {exc}")

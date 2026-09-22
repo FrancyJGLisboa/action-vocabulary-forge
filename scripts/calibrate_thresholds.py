@@ -64,8 +64,11 @@ def calibrate(
 def print_table(rows: list[dict[str, Any]]) -> None:
     print(f"{'question':32} {'action':28} {'n':>5}  {'suggested':>9}  bins (n/acc)")
     for row in rows:
+        def _acc(cell: dict[str, Any]) -> str:
+            return "-" if cell["acc"] is None else format(cell["acc"], ".2f")
+
         bins = " ".join(
-            f"{key}:{cell['n']}/{'-' if cell['acc'] is None else f'{cell['acc']:.2f}'}"
+            "{}:{}/{}".format(key, cell["n"], _acc(cell))
             for key, cell in row["bins"].items() if cell["n"]
         )
         suggested = "-" if row["suggested"] is None else f"{row['suggested']:.2f}"
