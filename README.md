@@ -37,7 +37,7 @@ ag-commodity tool: 5 generated handlers, JEV 53/54 vs 33/54 for the keyword
 resolver it replaced, release gate approved). `python_callable`, `http` and `cli`
 handlers have run for real; `ui` (Playwright) and `mcp` (MCP SDK) renderers are
 unit-tested at the SDK boundary but not yet exercised against a live browser or
-server. Expect the bundle schema to move; the validator is the contract.
+server. Runs against TypeSafe JEV or a self-hosted Laya checkpoint (`provider: laya`); the bundle, thresholds and gate do not change. Expect the bundle schema to move; the validator is the contract.
 
 ## Install as a skill
 

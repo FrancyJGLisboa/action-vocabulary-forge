@@ -32,6 +32,7 @@ BINDING_KINDS = {"python_callable", "http", "cli", "mcp", "ui"}
 BINDING_EXECUTABLE_GRADES = {"verified_runtime", "observed_trace"}
 HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
 UI_OPERATIONS = {"goto", "click", "fill", "select", "press", "check", "uncheck", "read"}
+PROVIDERS = {"vendor_neutral", "typesafe_system_one_http", "typesafe", "laya"}
 SECRET_PATTERN = re.compile(r"(?i)(bearer\s|api[_-]?key|password|secret|token)")
 PYTHON_LOCATOR = re.compile(r"^[\w.]+:[\w.]+$")
 REQUIRED_FILES = (
@@ -369,6 +370,11 @@ def validate(bundle: Path) -> tuple[list[str], list[str], dict[str, int]]:
     model = adapter_doc.get("model")
     if model is not None and not isinstance(model, str):
         errors.append("jev_adapter_spec: model must be a string")
+    provider = adapter_doc.get("provider", "vendor_neutral")
+    if provider not in PROVIDERS:
+        errors.append(f"jev_adapter_spec: provider must be one of {sorted(PROVIDERS)}")
+    if provider == "laya" and isinstance(model, str) and not model.startswith("laya:"):
+        warnings.append("jev_adapter_spec: provider laya with a non-laya model string; the adapter will use laya:typed-decisions")
 
     question_executors: dict[str, set[str]] = {}
     for question_id, question in questions.items():

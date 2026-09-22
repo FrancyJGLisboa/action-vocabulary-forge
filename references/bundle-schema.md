@@ -162,8 +162,8 @@ Example:
 
     schema_version: "1.0"
     system_id: example_system
-    provider: vendor_neutral
-    model: jev-latest                        # optional; default jev-latest
+    provider: vendor_neutral                 # vendor_neutral | typesafe_system_one_http | laya
+    model: jev-latest                        # optional; default jev-latest; laya:typed-decisions for provider laya
     endpoint: https://api.typesafe.ai/v1/systemone   # optional; must be https://
     policy:
       min_confidence: 0.85                   # global default

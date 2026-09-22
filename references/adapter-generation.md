@@ -52,6 +52,17 @@ decision, result = adapter.run(
 
 `run()` = `decide()` (classify + policy) + `execute()` with one log record. Use `decide()` alone for shadow mode. Pass `transport=callable(payload) -> response` to replace the HTTP call in tests. Dynamic questions take `dynamic_choices={question_id: {choice_id: criterion}}`; any runtime choice maps to the question's `dynamic_executor_action_id` and its raw id is kept in `Decision.selected_choice`.
 
+## Providers
+
+`jev_adapter_spec.yaml: provider` selects the transport the generated `classify()` uses when the
+host injects none: `typesafe_system_one_http` (default; `TYPESAFE_API_KEY`, `TYPESAFE_API_URL`)
+or `laya` (in-process, self-hosted; `pip install laya "numpy<2"`; `model: laya:typed-decisions`).
+`FORGE_PROVIDER=laya|typesafe` overrides at runtime. The Laya transport (embedded from
+`scripts/transports.py`) sends one question per `predict`, compacts the context to
+`max_state_chars`, and returns the same `answers` shape, stamped `model: laya:<checkpoint>`. The
+bundle, thresholds and gate do not change between providers; `evaluate_decisions.py --by-model`
+prints the metrics per model on the same log so the accuracy cost of going local is a number.
+
 ## Decision log record
 
 `timestamp, system_id, question_id, surface_id, case_id, state_id, selected_choice, proposed_action_id` (before policy), `action_id` (after policy), `confidence, probabilities, threshold, abstained, reason, legal_actions, executed, outcome (ok|blocked|error|null), blocked_reason, result_summary, handler_status, model, latency_ms, usage, ground_truth_action_id, label_source`. `calibrate_thresholds.py` and `evaluate_decisions.py` read this file; labels may be inline (`ground_truth_action_id`) or in a separate JSONL/CSV keyed by `case_id, question_id`.

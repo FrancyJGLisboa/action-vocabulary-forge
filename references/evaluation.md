@@ -67,4 +67,9 @@ Log metrics use the held-out split (`--all` evaluates everything):
 | Replacement rate (bundle) | promoted `generative_call` candidates / `generative_call` candidates |
 | Cost and latency | mean and p95 `latency_ms`; summed `usage` tokens |
 
+Records decided by code (`reason` starting with `deterministic:`, no confidence) are excluded from
+calibration bins and reported on their own line; any disagreement with labels is a host rule bug
+and holds the release. `--by-model` prints the log metrics per `model` value (e.g. `jev-1.13.0`
+vs `laya:typed-decisions`) on the same records.
+
 The release gate prints `APPROVE` (exit 0) or `HOLD` (exit 2) with each failing line: any illegal action; a question without an abstention path; an exercised non-fallback action with no threshold at any policy level; boundary or abstention accuracy below `--min-boundary-accuracy` / `--min-abstention-accuracy` (0.9); fewer than `--min-samples` held-out records; a bundle that fails validation. The human answers the printed approval question; the scripts never enable a surface on their own.

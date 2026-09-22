@@ -19,7 +19,8 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from decision_history import (  # noqa: E402
-    attach_labels, calibration_bins, load_questions, question_executors, question_fallbacks, read_labels, read_log, split_cases,
+    attach_labels, calibration_bins, is_deterministic, load_questions, question_executors, question_fallbacks, read_labels, read_log,
+    split_cases,
 )
 from validate_action_bundle import PRODUCTION_GRADES, validate  # noqa: E402
 
@@ -149,6 +150,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--min-abstention-accuracy", type=float, default=0.9)
     parser.add_argument("--min-samples", type=int, default=30)
     parser.add_argument("--json", type=Path, default=None)
+    parser.add_argument("--by-model", action="store_true", help="also print the log metrics per model value (e.g. JEV vs a local model)")
     args = parser.parse_args(argv)
 
     spec, questions = load_questions(args.bundle)
@@ -170,12 +172,32 @@ def main(argv: list[str] | None = None) -> int:
         min_boundary=args.min_boundary_accuracy, min_abstention=args.min_abstention_accuracy, min_samples=args.min_samples,
     )
 
+    deterministic = [r for r in evaluated if is_deterministic(r)]
+    det_agree = sum(1 for r in deterministic if r.get("action_id") == r.get("ground_truth_action_id"))
+    metrics["deterministic"] = ratio(det_agree, len(deterministic))
     print(f"system: {spec.get('system_id')}  records={len(records)} labeled={len(labeled)} dropped_unlabeled={dropped} evaluated={len(evaluated)}")
     for key in ("action_recall", "action_precision", "surface_coverage", "boundary_accuracy", "abstention_accuracy", "illegal_action_rate", "jev_accuracy", "replacement_rate"):
         print(f"  {key:22} {fmt(metrics[key])}")
     lat = metrics["latency_ms"]
     print(f"  {'latency_ms':22} mean={'n/a' if lat['mean'] is None else f'{lat['mean']:.1f}'} p95={'n/a' if lat['p95'] is None else f'{lat['p95']:.1f}'}")
     print(f"  {'usage':22} {metrics['usage'] or 'n/a'}")
+    print(f"  {'deterministic':22} {fmt(metrics['deterministic'])} decided by code, agreement with labels (must be 100%)")
+    if deterministic and det_agree != len(deterministic):
+        failures.append(f"deterministic decisions disagree with labels: {len(deterministic) - det_agree} (host rule bug, not a model issue)")
+        approved = False
+    if args.by_model:
+        by_model: dict[str, list[dict[str, Any]]] = {}
+        for r in evaluated:
+            if not is_deterministic(r):
+                by_model.setdefault(str(r.get("model") or "unknown"), []).append(r)
+        if by_model:
+            print("\nby model:")
+            print(f"  {'model':28} {'n':>4}  {'jev_accuracy':>14}  {'boundary':>12}  {'abstention':>12}  {'illegal':>8}  {'p95_ms':>7}")
+            for model_name, subset in sorted(by_model.items()):
+                m = log_metrics(subset, questions, static["registry_actions"])
+                p95 = m["latency_ms"]["p95"]
+                print(f"  {model_name:28} {len(subset):4d}  {fmt(m['jev_accuracy']):>14}  {fmt(m['boundary_accuracy']):>12}  {fmt(m['abstention_accuracy']):>12}  {m['illegal_action_rate']['count']:8d}  {'n/a' if p95 is None else f'{p95:.0f}':>7}")
+            metrics["by_model"] = {name: {k: log_metrics(subset, questions, static["registry_actions"])[k] for k in ("jev_accuracy", "boundary_accuracy", "abstention_accuracy", "illegal_action_rate", "latency_ms")} for name, subset in by_model.items()}
     print()
     print("RELEASE GATE: " + ("APPROVE" if approved else "HOLD"))
     for failure in failures:

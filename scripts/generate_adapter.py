@@ -22,6 +22,7 @@ import yaml
 DEFAULT_MODEL = "jev-latest"
 DEFAULT_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
 QUESTION_TYPES = {"choice", "noul", "score"}
+PROVIDERS = {"vendor_neutral", "typesafe_system_one_http", "typesafe", "laya"}
 CRITERIA_SOURCES = {"static", "dynamic"}
 BINDING_KINDS = {"python_callable", "http", "cli", "mcp", "ui"}
 # A handler is generated only when at least one binding evidence entry proves
@@ -131,6 +132,10 @@ def load_bundle(bundle: Path) -> dict[str, Any]:
                 if level["executor_action_id"] not in action_map:
                     raise SystemExit(f"question {question_id}: unknown executor_action_id {level['executor_action_id']!r}")
 
+    provider = docs["adapter"].get("provider", "vendor_neutral")
+    if provider not in PROVIDERS:
+        raise SystemExit(f"jev_adapter_spec: unsupported provider {provider!r}; use one of {sorted(PROVIDERS)}")
+
     grades = evidence_grades(bundle)
     for action_id, action in action_map.items():
         binding = action.get("binding")
@@ -225,6 +230,7 @@ from typing import Any, Callable, Iterable, Mapping
 
 DEFAULT_ENDPOINT = @@ENDPOINT@@
 MODEL = @@MODEL@@
+PROVIDER = @@PROVIDER@@
 UNCALIBRATED = float("inf")
 BUNDLE = @@BUNDLE@@
 ACTIONS = BUNDLE["actions"]
@@ -265,6 +271,11 @@ class HandlerUnavailable(ExecutionBlocked):
 # --- predicates (embedded from scripts/predicates.py) ---------------------
 @@PREDICATES@@
 # --- end predicates ---------------------------------------------------------
+
+
+# --- transports (embedded from scripts/transports.py) ----------------------
+@@TRANSPORTS@@
+# --- end transports ---------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -930,6 +941,23 @@ def _http_transport(endpoint: str | None, api_key: str | None) -> Callable[[dict
     return send
 
 
+def default_transport(*, endpoint: str | None = None, api_key: str | None = None) -> Callable[[dict[str, Any]], dict[str, Any]]:
+    """The transport named by FORGE_PROVIDER (env) or the bundle's provider; TypeSafe HTTP otherwise."""
+    provider = os.environ.get("FORGE_PROVIDER") or PROVIDER
+    if provider == "laya":
+        model = MODEL if MODEL.startswith("laya:") else os.environ.get("FORGE_LAYA_MODEL", "laya:typed-decisions")
+        send = laya_transport(model)
+
+        def guarded(payload: dict[str, Any]) -> dict[str, Any]:
+            try:
+                return send(payload)
+            except RuntimeError as exc:  # missing SDK or a malformed local answer
+                raise AdapterError(str(exc)) from exc
+
+        return guarded
+    return _http_transport(endpoint, api_key)
+
+
 def classify(
     context: Any,
     *,
@@ -945,7 +973,7 @@ def classify(
             raise AdapterError("question_id is required when the bundle has multiple classifier questions")
         question_id = next(iter(QUESTIONS))
     payload = build_payload(context, question_id=question_id, dynamic_choices=dynamic_choices)
-    send = transport or _http_transport(endpoint, api_key)
+    send = transport or default_transport(endpoint=endpoint, api_key=api_key)
     started = time.perf_counter()
     body = send(payload)
     latency_ms = (time.perf_counter() - started) * 1000.0
@@ -1001,7 +1029,7 @@ __all__ = [
     "AdapterError", "IllegalChoice", "ExecutionBlocked", "HandlerError", "HandlerUnavailable", "PredicateError",
     "apply_policy", "build_payload", "check_preconditions", "classify", "decide", "decision_record", "default_log",
     "execute", "infer_state", "legal_actions", "parse_response", "question_fallbacks", "run", "threshold_for",
-    "set_ui_page", "set_mcp_caller",
+    "set_ui_page", "set_mcp_caller", "default_transport", "laya_transport", "PROVIDER",
 ]
 '''
 
@@ -1015,10 +1043,19 @@ def render(bundle: dict[str, Any], module: str) -> str:
         if not line.startswith(("from __future__", "import re", "from typing"))
     ).strip("\n")
     body = "import re\n\n" + body
+    transports = (Path(__file__).with_name("transports.py")).read_text(encoding="utf-8")
+    tbody = transports.split('"""', 2)[2]
+    tbody = "\n".join(
+        line for line in tbody.splitlines()
+        if not line.startswith(("from __future__", "import json", "import threading", "from typing"))
+    ).strip("\n")
+    tbody = "import threading\n\n" + tbody
     return (
         TEMPLATE.replace("@@SYSTEM_ID@@", str(bundle["system_id"]))
         .replace("@@ENDPOINT@@", repr(bundle["endpoint"]))
         .replace("@@MODEL@@", repr(bundle["model"]))
+        .replace("@@PROVIDER@@", repr(bundle["provider"]))
+        .replace("@@TRANSPORTS@@", tbody)
         .replace("@@BUNDLE@@", repr(bundle))
         .replace("@@PREDICATES@@", body)
         .replace("@@HANDLERS@@", render_handlers(bundle))

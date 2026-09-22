@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 (2026-09-22)
+
+- `provider: laya`: in-process local transport (Laya, Apache-2.0) with the same answer shape as TypeSafe System One, embedded into generated adapters; `FORGE_PROVIDER` env override; `default_transport()`.
+- Calibration skips records without a confidence (deterministic decisions); `evaluate_decisions.py` reports deterministic agreement separately (a disagreement holds the release) and gains `--by-model`.
+
 ## 0.3.0 (2026-09-22)
 
 - `ui` bindings render to Playwright handlers (`goto/click/fill/select/press/check/uncheck/read` on a locator template, optional `url`), on a host-injected page (`set_ui_page`) or a headless browser per call.

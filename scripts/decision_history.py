@@ -81,12 +81,23 @@ def bin_label(lo: float, hi: float) -> str:
     return f"{lo:g}-{hi:g}"
 
 
+def is_deterministic(record: Mapping[str, Any]) -> bool:
+    """A record the host decided without the model (single legal action, adapter error, ...)."""
+    return str(record.get("reason") or "").startswith("deterministic:") or record.get("confidence") is None
+
+
 def calibration_bins(records: Iterable[Mapping[str, Any]], edges: tuple[float, ...] = CALIBRATION_EDGES) -> dict[str, dict[str, Any]]:
-    """{bin: {n, acc}} where a hit is proposed_action_id == ground_truth_action_id."""
+    """{bin: {n, acc}} where a hit is proposed_action_id == ground_truth_action_id.
+
+    Records without a confidence (deterministic decisions) are skipped: they carry no
+    model signal and would land in the lowest bin as hits, dragging thresholds down.
+    """
     bins = {bin_label(lo, hi): {"n": 0, "hits": 0} for lo, hi in zip(edges, edges[1:])}
     for record in records:
         confidence = record.get("confidence")
-        value = 0.0 if confidence is None else float(confidence)
+        if confidence is None:
+            continue
+        value = float(confidence)
         for lo, hi in zip(edges, edges[1:]):
             if lo <= value < hi or (value >= hi and hi == edges[-1]):
                 cell = bins[bin_label(lo, hi)]
