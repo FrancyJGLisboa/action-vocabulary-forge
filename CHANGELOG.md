@@ -4,6 +4,9 @@
 
 - `provider: laya`: in-process local transport (Laya, Apache-2.0) with the same answer shape as TypeSafe System One, embedded into generated adapters; `FORGE_PROVIDER` env override; `default_transport()`.
 - Calibration skips records without a confidence (deterministic decisions); `evaluate_decisions.py` reports deterministic agreement separately (a disagreement holds the release) and gains `--by-model`.
+- The Laya transport reports the winning probability as `confidence` and keeps the provider's own value as `native_confidence`: Laya's native confidence is a margin topping out near 0.3, which collapsed every record into the lowest calibration bin so no group could ever calibrate.
+- Python 3.11 compatibility: nested same-quote f-strings (PEP 701, 3.12+) removed; a test parses every script at `feature_version=(3, 11)`. Found running a generated adapter on Intel macOS, where torch caps at 2.2.2 and the venv must be 3.11.
+- First measured provider comparison on one bundle (60 labeled samples, internal-control testing): hosted `jev-1.13.0` 97.3% raw agreement and 95% of decisions executed; local `laya:typed-decisions` 90.0% and 31% executed; **zero wrong conclusions after thresholds on either**, and the gate held the local one by naming the attribute that never reached the accuracy target.
 
 ## 0.3.0 (2026-09-22)
 

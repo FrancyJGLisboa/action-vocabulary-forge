@@ -59,7 +59,10 @@ host injects none: `typesafe_system_one_http` (default; `TYPESAFE_API_KEY`, `TYP
 or `laya` (in-process, self-hosted; `pip install laya "numpy<2"`; `model: laya:typed-decisions`).
 `FORGE_PROVIDER=laya|typesafe` overrides at runtime. The Laya transport (embedded from
 `scripts/transports.py`) sends one question per `predict`, compacts the context to
-`max_state_chars`, and returns the same `answers` shape, stamped `model: laya:<checkpoint>`. The
+`max_state_chars`, and returns the same `answers` shape, stamped `model: laya:<checkpoint>`.
+It reports the winning probability as `confidence` (keeping the provider's own value as
+`native_confidence`), because providers scale confidence differently and the calibration bins are
+fixed; a margin-scaled value would collapse into the lowest bin and never calibrate. The
 bundle, thresholds and gate do not change between providers; `evaluate_decisions.py --by-model`
 prints the metrics per model on the same log so the accuracy cost of going local is a number.
 
