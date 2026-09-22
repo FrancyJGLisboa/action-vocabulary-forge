@@ -231,6 +231,9 @@ from typing import Any, Callable, Iterable, Mapping
 DEFAULT_ENDPOINT = @@ENDPOINT@@
 MODEL = @@MODEL@@
 PROVIDER = @@PROVIDER@@
+# Providers with a small context window read the compact wording when a question carries one.
+# FORGE_COMPACT_CRITERIA=1|0 forces it on or off.
+COMPACT_PROVIDERS = {"laya"}
 UNCALIBRATED = float("inf")
 BUNDLE = @@BUNDLE@@
 ACTIONS = BUNDLE["actions"]
@@ -340,10 +343,27 @@ def legal_actions(state: Mapping[str, Any]) -> list[str]:
 
 # --- questions ------------------------------------------------------------------
 
+def use_compact() -> bool:
+    """True when the active provider should get the compact wording of a question."""
+    forced = os.environ.get("FORGE_COMPACT_CRITERIA")
+    if forced is not None:
+        return forced not in ("", "0", "false", "False")
+    return (os.environ.get("FORGE_PROVIDER") or PROVIDER) in COMPACT_PROVIDERS
+
+
+def _text(item: Mapping[str, Any], field: str, default: Any = None) -> Any:
+    """The compact variant of a field when one exists and the provider wants it."""
+    if use_compact():
+        compact = item.get(field + "_compact")
+        if compact:
+            return compact
+    return item.get(field, default)
+
+
 def _criteria(question: Mapping[str, Any], dynamic: Mapping[str, str] | None = None) -> Any:
     kind = question.get("type", "choice")
     if kind == "choice":
-        criteria = {item["id"]: item.get("criterion", item["id"]) for item in question["choices"]}
+        criteria = {item["id"]: _text(item, "criterion", item["id"]) for item in question["choices"]}
         if dynamic:
             if question.get("criteria_source", "static") != "dynamic":
                 raise IllegalChoice(f"question {question['question_id']} is static and does not accept dynamic choices")
@@ -355,7 +375,7 @@ def _criteria(question: Mapping[str, Any], dynamic: Mapping[str, str] | None = N
             raise AdapterError(f"question {question['question_id']}: dynamic Choice needs at least two criteria in total")
         return criteria
     if kind == "score":
-        return [item.get("criterion", item["id"]) for item in question["levels"]]
+        return [_text(item, "criterion", item["id"]) for item in question["levels"]]
     return None
 
 
@@ -374,7 +394,7 @@ def build_payload(
     for qid, question in selected.items():
         item = {
             "type": question.get("type", "choice"),
-            "instructions": question.get("instruction") or question.get("instructions") or "Choose the best supported result.",
+            "instructions": _text(question, "instruction") or _text(question, "instructions") or "Choose the best supported result.",
         }
         criteria = _criteria(question, (dynamic_choices or {}).get(qid))
         if criteria is not None:
@@ -1029,7 +1049,7 @@ __all__ = [
     "AdapterError", "IllegalChoice", "ExecutionBlocked", "HandlerError", "HandlerUnavailable", "PredicateError",
     "apply_policy", "build_payload", "check_preconditions", "classify", "decide", "decision_record", "default_log",
     "execute", "infer_state", "legal_actions", "parse_response", "question_fallbacks", "run", "threshold_for",
-    "set_ui_page", "set_mcp_caller", "default_transport", "laya_transport", "PROVIDER",
+    "set_ui_page", "set_mcp_caller", "default_transport", "laya_transport", "PROVIDER", "use_compact",
 ]
 '''
 

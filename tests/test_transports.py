@@ -133,6 +133,68 @@ class ProviderSelectionTests(unittest.TestCase):
                 generate_adapter.load_bundle(bundle)
 
 
+class CompactCriteriaTests(unittest.TestCase):
+    """A small-context provider reads the compact wording when the question carries one."""
+
+    def compact_bundle(self, provider="laya"):
+        bundle = load_example()
+        bundle["provider"] = provider
+        question = bundle["questions"][Q]
+        question["instruction"] = "A long instruction that spells out the whole policy at length."
+        question["instruction_compact"] = "Pick one."
+        for choice in question["choices"]:
+            choice["criterion_compact"] = f"short: {choice['id']}"
+        return bundle
+
+    def test_compact_wording_is_used_for_a_small_context_provider(self):
+        m = import_bundle(self.compact_bundle())
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("FORGE_COMPACT_CRITERIA", None)
+            os.environ.pop("FORGE_PROVIDER", None)
+            self.assertTrue(m.use_compact())
+            payload = m.build_payload({"x": 1}, question_id=Q)
+        self.assertEqual(payload["questions"][Q]["instructions"], "Pick one.")
+        self.assertEqual(payload["questions"][Q]["criteria"]["retry"], "short: retry")
+
+    def test_full_wording_is_used_for_a_large_context_provider(self):
+        m = import_bundle(self.compact_bundle(provider="typesafe_system_one_http"))
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("FORGE_COMPACT_CRITERIA", None)
+            os.environ.pop("FORGE_PROVIDER", None)
+            self.assertFalse(m.use_compact())
+            payload = m.build_payload({"x": 1}, question_id=Q)
+        self.assertTrue(payload["questions"][Q]["instructions"].startswith("A long instruction"))
+        self.assertNotEqual(payload["questions"][Q]["criteria"]["retry"], "short: retry")
+
+    def test_env_forces_it_either_way(self):
+        m = import_bundle(self.compact_bundle(provider="typesafe_system_one_http"))
+        with mock.patch.dict(os.environ, {"FORGE_COMPACT_CRITERIA": "1"}, clear=False):
+            self.assertEqual(m.build_payload({"x": 1}, question_id=Q)["questions"][Q]["instructions"], "Pick one.")
+        m2 = import_bundle(self.compact_bundle())
+        with mock.patch.dict(os.environ, {"FORGE_COMPACT_CRITERIA": "0"}, clear=False):
+            self.assertTrue(m2.build_payload({"x": 1}, question_id=Q)["questions"][Q]["instructions"].startswith("A long"))
+
+    def test_a_question_without_compact_wording_falls_back(self):
+        bundle = load_example()
+        bundle["provider"] = "laya"
+        m = import_bundle(bundle)
+        payload = m.build_payload({"x": 1}, question_id=Q)
+        self.assertTrue(payload["questions"][Q]["criteria"]["retry"])
+
+    def test_validator_requires_compact_on_every_choice_or_none(self):
+        import shutil, tempfile, validate_action_bundle, yaml
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "bundle"
+            shutil.copytree(EXAMPLE, bundle)
+            spec_path = bundle / "jev_adapter_spec.yaml"
+            spec = yaml.safe_load(spec_path.read_text())
+            spec["provider"] = "laya"
+            spec["classifier_questions"][0]["choices"][0]["criterion_compact"] = "short"
+            spec_path.write_text(yaml.safe_dump(spec, sort_keys=False))
+            errors, _, _ = validate_action_bundle.validate(bundle)
+            self.assertTrue(any("every choice or none" in e for e in errors), errors)
+
+
 class ByModelTests(unittest.TestCase):
     def test_by_model_table_and_deterministic_line(self):
         def record(case, model, proposed, truth, conf, reason=None):

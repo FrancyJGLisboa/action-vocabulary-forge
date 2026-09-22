@@ -195,6 +195,12 @@ to `choice`; a `noul` question uses `yes_action_id` and `no_action_id`, while a
 `score` question uses ordered `levels` with `id`, `criterion`, and
 `executor_action_id`. Non-Choice questions declare `abstention_action_id`.
 
+A question may carry a compact wording for providers with a small context window:
+`instruction_compact` on the question and `criterion_compact` on every choice (or none). The
+generated adapter uses them when the active provider is in `COMPACT_PROVIDERS` (currently `laya`);
+`FORGE_COMPACT_CRITERIA=1|0` forces it either way. Changing a wording changes the instrument:
+recalibrate before relying on the old thresholds.
+
 Threshold resolution is `policy.questions[q].actions[a]`, then
 `policy.questions[q].min_confidence`, then `policy.min_confidence`. An action
 with no threshold at any level abstains unless `default_when_uncalibrated: allow`.

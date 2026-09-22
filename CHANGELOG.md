@@ -2,6 +2,7 @@
 
 ## 0.4.0 (2026-09-22)
 
+- `criterion_compact` / `instruction_compact`: a question may carry a short wording used by providers with a small context window (`COMPACT_PROVIDERS`, currently `laya`); `FORGE_COMPACT_CRITERIA=1|0` forces it. The validator requires compact criteria on every choice or none.
 - `provider: laya`: in-process local transport (Laya, Apache-2.0) with the same answer shape as TypeSafe System One, embedded into generated adapters; `FORGE_PROVIDER` env override; `default_transport()`.
 - Calibration skips records without a confidence (deterministic decisions); `evaluate_decisions.py` reports deterministic agreement separately (a disagreement holds the release) and gains `--by-model`.
 - The Laya transport reports the winning probability as `confidence` and keeps the provider's own value as `native_confidence`: Laya's native confidence is a margin topping out near 0.3, which collapsed every record into the lowest calibration bin so no group could ever calibrate.

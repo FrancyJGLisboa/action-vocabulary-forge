@@ -404,11 +404,22 @@ def validate(bundle: Path) -> tuple[list[str], list[str], dict[str, int]]:
             if kind != "choice":
                 errors.append(f"question {question_id}: criteria_source dynamic requires type choice")
             check_executor(question.get("dynamic_executor_action_id"), "dynamic_executor_action_id")
+        for field in ("instruction_compact", "instructions_compact"):
+            if field in question and not isinstance(question[field], str):
+                errors.append(f"question {question_id}: {field} must be a string")
         if kind == "choice":
             choice_ids: list[str] = []
+            compact_seen = 0
             for choice in items(question, "choices", f"question {question_id}", errors):
                 choice_ids.append(choice.get("id"))
                 check_executor(choice.get("executor_action_id"), "executor_action_id")
+                compact = choice.get("criterion_compact")
+                if compact is not None and not isinstance(compact, str):
+                    errors.append(f"question {question_id}: criterion_compact must be a string")
+                elif compact:
+                    compact_seen += 1
+            if provider == "laya" and compact_seen and compact_seen != len(choice_ids):
+                errors.append(f"question {question_id}: criterion_compact must cover every choice or none")
             if len(set(choice_ids)) != len(choice_ids):
                 errors.append(f"question {question_id}: duplicate choice id")
             if len(choice_ids) < (1 if source == "dynamic" else 2):
