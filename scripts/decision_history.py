@@ -41,7 +41,7 @@ def read_labels(path: Path | str | None) -> dict[tuple[str, str], str]:
     rows: Iterable[Mapping[str, Any]]
     text = path.read_text(encoding="utf-8")
     if path.suffix.lower() == ".csv":
-        rows = list(csv.DictReader(text.splitlines()))
+        rows = list(csv.DictReader([line for line in text.splitlines() if not line.lstrip().startswith("#")]))
     else:
         rows = [json.loads(line) for line in text.splitlines() if line.strip()]
     labels: dict[tuple[str, str], str] = {}

@@ -63,7 +63,7 @@ class HistoryTests(unittest.TestCase):
     def test_labels_csv_and_jsonl(self):
         with tempfile.TemporaryDirectory() as directory:
             csv_path = Path(directory) / "labels.csv"
-            csv_path.write_text("case_id,question_id,ground_truth_action_id\nc1,q,retry\n")
+            csv_path.write_text("# provenance header\ncase_id,question_id,ground_truth_action_id\nc1,q,retry\n")
             jsonl_path = Path(directory) / "labels.jsonl"
             jsonl_path.write_text(json.dumps({"case_id": "c2", "question_id": "q", "ground_truth_action_id": "human_review"}) + "\n")
             self.assertEqual(dh.read_labels(csv_path), {("c1", "q"): "retry"})
