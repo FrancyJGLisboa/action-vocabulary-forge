@@ -172,10 +172,10 @@ For large vocabularies, compose hierarchical surfaces (domain → operation fami
 `jev_adapter_spec.yaml` should map each classifier question to exactly one surface and map every choice to an executor `action_id`. Keep provider-specific SDK fields out of the bundle. A JEV adapter may add model configuration later, but it must preserve choice IDs, abstention behavior, and the evidence boundary.
 
 The generated adapter is the mechanical implementation of this boundary. Its
-handlers come from the bindings: `python_callable`, `http`, and `cli` bindings
-with observed evidence become executable code; `mcp` and `ui` bindings, and any
-binding without observed evidence, become stubs that the host overrides with
-`HANDLERS[action_id] = callable`. The host may still pass a deterministic
+handlers come from the bindings: `python_callable`, `http`, `cli`, `mcp`
+(MCP SDK) and `ui` (Playwright) bindings with observed evidence become
+executable code; any binding without observed evidence becomes a stub that the
+host overrides with `HANDLERS[action_id] = callable`. The host may still pass a deterministic
 `guard`, and the adapter re-evaluates every action precondition before the
 side effect. Read [references/adapter-generation.md](references/adapter-generation.md).
 

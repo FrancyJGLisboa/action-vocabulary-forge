@@ -261,16 +261,154 @@ class HandlerTests(unittest.TestCase):
         with self.assertRaises(failing.HandlerError):
             failing.execute(failing.parse_response(choice_response(Q, "retry", 0.96), Q), GOOD_STATE)
 
-    def test_mcp_and_ui_stay_stubs_even_when_observed(self):
-        bundle = load_example()
-        bundle["actions"]["retry"]["binding"] = {"kind": "mcp", "locator": "srv/tool", "server": "srv", "tool": "tool", "evidence_refs": ["binding_retry_call"]}
-        import generate_adapter
-        self.assertEqual(generate_adapter.handler_status(bundle["actions"]["retry"], {"binding_retry_call": "verified_runtime"}), "stub:unsupported_kind:mcp")
-        bundle["handler_status"]["retry"] = "stub:unsupported_kind:mcp"
+    def test_ui_handler_with_injected_page(self):
+        bundle = self.observed(load_example(), "retry", {
+            "kind": "ui", "operation": "fill", "url": "https://app.example.invalid/records/{record_id}",
+            "locator": "#retry-reason", "arg_mapping": {"record_id": "record_id", "value": "note"},
+            "evidence_refs": ["binding_retry_call"],
+        })
         m = import_bundle(bundle)
-        with self.assertRaises(m.HandlerUnavailable) as ctx:
-            m.execute(m.parse_response(choice_response(Q, "retry", 0.96), Q), GOOD_STATE)
-        self.assertIn("HANDLERS['retry']", str(ctx.exception))
+        self.assertEqual(m.HANDLER_STATUS["retry"], "generated:ui")
+        calls = []
+
+        class FakeLocator:
+            def __init__(self, selector): self.selector = selector
+            def fill(self, value, timeout=None): calls.append(("fill", self.selector, value))
+            def click(self, timeout=None): calls.append(("click", self.selector))
+            def inner_text(self, timeout=None): return "hello"
+
+        class FakePage:
+            url = None
+            def goto(self, url, timeout=None): calls.append(("goto", url)); self.url = url
+            def locator(self, selector): return FakeLocator(selector)
+
+        decision = m.parse_response(choice_response(Q, "retry", 0.96), Q)
+        decision = m.apply_policy(decision)
+        m.set_ui_page(FakePage())
+        try:
+            result = m.execute(decision, {**GOOD_STATE, "note": "transient"})
+        finally:
+            m.set_ui_page(None)
+        self.assertEqual(calls, [("goto", "https://app.example.invalid/records/r-1"), ("fill", "#retry-reason", "transient")])
+        self.assertEqual(result["operation"], "fill")
+
+        bundle["actions"]["retry"]["binding"].update({"operation": "read", "arg_mapping": {"record_id": "record_id"}})
+        m2 = import_bundle(bundle)
+        m2.set_ui_page(FakePage())
+        try:
+            self.assertEqual(m2.execute(m2.parse_response(choice_response(Q, "retry", 0.96), Q), GOOD_STATE)["text"], "hello")
+        finally:
+            m2.set_ui_page(None)
+
+    def test_ui_handler_without_page_or_playwright_is_blocked(self):
+        bundle = self.observed(load_example(), "retry", {
+            "kind": "ui", "operation": "click", "locator": "text=Retry", "evidence_refs": ["binding_retry_call"],
+        })
+        m = import_bundle(bundle)
+        decision = m.parse_response(choice_response(Q, "retry", 0.96), Q)
+        with self.assertRaises(m.ExecutionBlocked) as ctx:
+            m.execute(decision, GOOD_STATE)  # no page injected and no url to open
+        self.assertIn("set_ui_page", str(ctx.exception))
+        bundle["actions"]["retry"]["binding"]["url"] = "https://app.example.invalid/"
+        m2 = import_bundle(bundle)
+        with mock.patch.dict(sys.modules, {"playwright": None, "playwright.sync_api": None}):
+            with self.assertRaises(m2.ExecutionBlocked) as ctx:
+                m2.execute(m2.parse_response(choice_response(Q, "retry", 0.96), Q), GOOD_STATE)
+        self.assertIn("playwright is not installed", str(ctx.exception))
+
+    def test_ui_handler_launches_playwright_when_no_page_injected(self):
+        bundle = self.observed(load_example(), "retry", {
+            "kind": "ui", "operation": "click", "url": "https://app.example.invalid/", "locator": "text=Retry",
+            "evidence_refs": ["binding_retry_call"],
+        })
+        m = import_bundle(bundle)
+        events = []
+        page = mock.MagicMock(); page.url = "https://app.example.invalid/"
+        page.locator.return_value.click.side_effect = lambda timeout=None: events.append("click")
+        browser = mock.MagicMock(); browser.new_page.return_value = page
+        pw = mock.MagicMock(); pw.chromium.launch.return_value = browser
+        cm = mock.MagicMock(); cm.__enter__.return_value = pw
+        fake_api = types.SimpleNamespace(sync_playwright=lambda: cm)
+        with mock.patch.dict(sys.modules, {"playwright": types.SimpleNamespace(sync_api=fake_api), "playwright.sync_api": fake_api}):
+            result = m.execute(m.parse_response(choice_response(Q, "retry", 0.96), Q), GOOD_STATE)
+        self.assertEqual(events, ["click"])
+        self.assertEqual(result["selector"], "text=Retry")
+        browser.close.assert_called_once()
+
+    def test_mcp_handler_with_injected_caller(self):
+        bundle = self.observed(load_example(), "retry", {
+            "kind": "mcp", "locator": "validation/retry", "server": "validation", "tool": "retry",
+            "transport": "stdio", "command": "validation-mcp", "arg_mapping": {"record_id": "record_id"},
+            "evidence_refs": ["binding_retry_call"],
+        })
+        m = import_bundle(bundle)
+        self.assertEqual(m.HANDLER_STATUS["retry"], "generated:mcp")
+        seen = []
+        m.set_mcp_caller(lambda server, tool, args, binding: seen.append((server, tool, dict(args))) or {"ok": True})
+        try:
+            result = m.execute(m.parse_response(choice_response(Q, "retry", 0.96), Q), GOOD_STATE)
+        finally:
+            m.set_mcp_caller(None)
+        self.assertEqual(result, {"ok": True})
+        self.assertEqual(seen, [("validation", "retry", {"record_id": "r-1"})])
+        m.set_mcp_caller(lambda *a: 1 / 0)
+        try:
+            with self.assertRaises(m.HandlerError):
+                m.execute(m.parse_response(choice_response(Q, "retry", 0.96), Q), GOOD_STATE)
+        finally:
+            m.set_mcp_caller(None)
+
+    def test_mcp_handler_without_sdk_is_blocked_and_auth_env_checked(self):
+        bundle = self.observed(load_example(), "retry", {
+            "kind": "mcp", "locator": "validation/retry", "server": "validation", "tool": "retry",
+            "transport": "http", "url": "https://mcp.example.invalid/mcp", "auth_env": "MCP_TOKEN",
+            "arg_mapping": {"record_id": "record_id"}, "evidence_refs": ["binding_retry_call"],
+        })
+        m = import_bundle(bundle)
+        decision = m.parse_response(choice_response(Q, "retry", 0.96), Q)
+        with mock.patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("MCP_TOKEN", None)
+            with self.assertRaises(m.ExecutionBlocked) as ctx:
+                m.execute(decision, GOOD_STATE)
+            self.assertIn("MCP_TOKEN", str(ctx.exception))
+            os.environ["MCP_TOKEN"] = "t"
+            with mock.patch.dict(sys.modules, {"mcp": None}):
+                with self.assertRaises(m.ExecutionBlocked) as ctx:
+                    m.execute(decision, GOOD_STATE)
+        self.assertIn("mcp package is not installed", str(ctx.exception))
+
+    def test_mcp_handler_stdio_via_sdk(self):
+        bundle = self.observed(load_example(), "retry", {
+            "kind": "mcp", "locator": "validation/retry", "server": "validation", "tool": "retry",
+            "transport": "stdio", "command": "validation-mcp", "args": ["--fast"],
+            "arg_mapping": {"record_id": "record_id"}, "evidence_refs": ["binding_retry_call"],
+        })
+        m = import_bundle(bundle)
+        calls = []
+
+        class FakeSession:
+            def __init__(self, read, write): pass
+            async def __aenter__(self): return self
+            async def __aexit__(self, *a): return False
+            async def initialize(self): calls.append("init")
+            async def call_tool(self, tool, arguments):
+                calls.append((tool, arguments))
+                return types.SimpleNamespace(content=[types.SimpleNamespace(text="started:r-1")], isError=False)
+
+        class FakeStdio:
+            def __init__(self, params): self.params = params
+            async def __aenter__(self): calls.append(("stdio", self.params.command, list(self.params.args))); return (None, None)
+            async def __aexit__(self, *a): return False
+
+        class Params:
+            def __init__(self, command, args, env, cwd): self.command, self.args = command, args
+
+        fake_mcp = types.SimpleNamespace(ClientSession=FakeSession, StdioServerParameters=Params)
+        fake_stdio = types.SimpleNamespace(stdio_client=FakeStdio)
+        with mock.patch.dict(sys.modules, {"mcp": fake_mcp, "mcp.client": types.SimpleNamespace(stdio=fake_stdio), "mcp.client.stdio": fake_stdio}):
+            result = m.execute(m.parse_response(choice_response(Q, "retry", 0.96), Q), GOOD_STATE)
+        self.assertEqual(result, "started:r-1")
+        self.assertEqual(calls, [("stdio", "validation-mcp", ["--fast"]), "init", ("retry", {"record_id": "r-1"})])
 
 
 class DynamicCriteriaTests(unittest.TestCase):

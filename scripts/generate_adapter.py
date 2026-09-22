@@ -28,9 +28,10 @@ BINDING_KINDS = {"python_callable", "http", "cli", "mcp", "ui"}
 # the invocation was seen to run. documented/verified_schema prove existence,
 # not invocation, so they render a stub.
 BINDING_EXECUTABLE_GRADES = {"verified_runtime", "observed_trace"}
-# Kinds with a safe generic renderer. mcp needs a per-server transport and ui a
-# browser driver; both stay stubs that the host overrides.
-GENERATED_KINDS = {"python_callable", "http", "cli"}
+# Every kind has a generic renderer. ui uses Playwright and mcp the MCP Python
+# SDK; both are imported inside the handler and both accept a host-injected
+# page / caller so an existing browser or session can be reused.
+GENERATED_KINDS = {"python_callable", "http", "cli", "mcp", "ui"}
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -191,7 +192,7 @@ def render_handlers(bundle: dict[str, Any]) -> str:
                     f"(current refs: {refs}); add one to the ledger and regenerate"
                 )
             else:
-                hint = f"binding {locator!r} needs a host transport; set HANDLERS[{action_id!r}] = your_callable"
+                hint = f"binding kind is not supported by this generator; set HANDLERS[{action_id!r}] = your_callable"
             lines.append(f"    raise HandlerUnavailable({action_id!r}, {status!r}, {hint!r})")
         lines.append("")
         lines.append("")
@@ -680,6 +681,168 @@ def _call_cli(action_id: str, call_state: Mapping[str, Any]) -> Any:
     return {"returncode": completed.returncode, "stdout": completed.stdout, "stderr": completed.stderr}
 
 
+# --- ui (Playwright) and mcp (MCP SDK) ----------------------------------------------------
+# Hosts may inject what they already have; the SDKs are only imported when nothing was injected.
+_UI_PAGE: Any = None
+_MCP_CALLER: Callable[[str, str, Mapping[str, Any], Mapping[str, Any]], Any] | None = None
+UI_OPERATIONS = {"goto", "click", "fill", "select", "press", "check", "uncheck", "read"}
+
+
+def set_ui_page(page: Any) -> None:
+    """Reuse a Playwright Page (sync API) the host already owns; None resets."""
+    global _UI_PAGE
+    _UI_PAGE = page
+
+
+def set_mcp_caller(caller: Callable[[str, str, Mapping[str, Any], Mapping[str, Any]], Any] | None) -> None:
+    """Route MCP calls through the host: caller(server, tool, arguments, binding) -> result."""
+    global _MCP_CALLER
+    _MCP_CALLER = caller
+
+
+def _ui_operate(page: Any, action_id: str, binding: Mapping[str, Any], arguments: Mapping[str, Any]) -> Any:
+    operation = str(binding.get("operation", "click"))
+    if operation not in UI_OPERATIONS:
+        raise ExecutionBlocked(f"action {action_id}: unsupported ui operation {operation!r}")
+    flat = _flat(arguments)
+    timeout_ms = float(binding.get("timeout_seconds", 30)) * 1000.0
+    url = binding.get("url")
+    if url:
+        try:
+            page.goto(str(url).format(**flat), timeout=timeout_ms)
+        except KeyError as exc:
+            raise ExecutionBlocked(f"action {action_id}: url template needs argument {exc}") from exc
+    if operation == "goto":
+        return {"url": page.url if hasattr(page, "url") else url}
+    try:
+        selector = str(binding["locator"]).format(**flat)
+    except KeyError as exc:
+        raise ExecutionBlocked(f"action {action_id}: locator template needs argument {exc}") from exc
+    target = page.locator(selector)
+    value = arguments.get("value")
+    if operation in {"fill", "select", "press"} and value is None:
+        raise ExecutionBlocked(f"action {action_id}: ui operation {operation} needs a 'value' argument (use arg_mapping)")
+    if operation == "click":
+        target.click(timeout=timeout_ms)
+    elif operation == "fill":
+        target.fill(str(value), timeout=timeout_ms)
+    elif operation == "select":
+        target.select_option(str(value), timeout=timeout_ms)
+    elif operation == "press":
+        target.press(str(value), timeout=timeout_ms)
+    elif operation == "check":
+        target.check(timeout=timeout_ms)
+    elif operation == "uncheck":
+        target.uncheck(timeout=timeout_ms)
+    else:
+        return {"selector": selector, "text": target.inner_text(timeout=timeout_ms)}
+    return {"selector": selector, "operation": operation, "url": getattr(page, "url", None)}
+
+
+def _call_ui(action_id: str, call_state: Mapping[str, Any]) -> Any:
+    binding = ACTIONS[action_id]["binding"]
+    arguments = _arguments(action_id, call_state)
+    if _UI_PAGE is not None:
+        try:
+            return _ui_operate(_UI_PAGE, action_id, binding, arguments)
+        except ExecutionBlocked:
+            raise
+        except Exception as exc:
+            raise HandlerError(f"action {action_id}: ui operation failed: {exc!r}") from exc
+    if not binding.get("url"):
+        raise ExecutionBlocked(f"action {action_id}: no Playwright page injected (set_ui_page) and binding has no url to open")
+    try:
+        from playwright.sync_api import sync_playwright  # type: ignore
+    except ImportError as exc:
+        raise ExecutionBlocked(f"action {action_id}: playwright is not installed (pip install playwright && playwright install chromium) or inject a page with set_ui_page") from exc
+    try:
+        with sync_playwright() as pw:
+            browser = getattr(pw, str(binding.get("browser", "chromium"))).launch(headless=bool(binding.get("headless", True)))
+            try:
+                return _ui_operate(browser.new_page(), action_id, binding, arguments)
+            finally:
+                browser.close()
+    except ExecutionBlocked:
+        raise
+    except Exception as exc:
+        raise HandlerError(f"action {action_id}: ui operation failed: {exc!r}") from exc
+
+
+def _mcp_result(result: Any) -> Any:
+    """Flatten an MCP CallToolResult into plain data."""
+    content = getattr(result, "content", result)
+    if isinstance(content, list):
+        parts = []
+        for item in content:
+            text = getattr(item, "text", None)
+            parts.append(text if text is not None else (item if isinstance(item, (str, dict)) else repr(item)))
+        return parts[0] if len(parts) == 1 else parts
+    return content
+
+
+def _call_mcp(action_id: str, call_state: Mapping[str, Any]) -> Any:
+    binding = ACTIONS[action_id]["binding"]
+    arguments = _arguments(action_id, call_state)
+    server, tool = str(binding.get("server")), str(binding.get("tool"))
+    if _MCP_CALLER is not None:
+        try:
+            return _MCP_CALLER(server, tool, arguments, binding)
+        except ExecutionBlocked:
+            raise
+        except Exception as exc:
+            raise HandlerError(f"action {action_id}: mcp tool {server}/{tool} failed: {exc!r}") from exc
+    transport = str(binding.get("transport", "stdio"))
+    headers: dict[str, str] = {str(k): str(v) for k, v in (binding.get("headers") or {}).items()}
+    auth_env = binding.get("auth_env")
+    if auth_env:
+        token = os.environ.get(str(auth_env))
+        if not token:
+            raise ExecutionBlocked(f"action {action_id}: environment variable {auth_env} is not set")
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        import asyncio  # noqa: PLC0415
+        from mcp import ClientSession  # type: ignore
+        if transport == "stdio":
+            from mcp import StdioServerParameters  # type: ignore
+            from mcp.client.stdio import stdio_client  # type: ignore
+        else:
+            from mcp.client.streamable_http import streamablehttp_client  # type: ignore
+    except ImportError as exc:
+        raise ExecutionBlocked(f"action {action_id}: the mcp package is not installed (pip install mcp) or inject a caller with set_mcp_caller") from exc
+
+    async def call() -> Any:
+        if transport == "stdio":
+            command = binding.get("command")
+            if not command:
+                raise ExecutionBlocked(f"action {action_id}: stdio mcp binding needs command")
+            env = {key: os.environ[key] for key in ("PATH", "HOME", "LANG") if key in os.environ}
+            for key in binding.get("env_allowlist") or []:
+                if key in os.environ:
+                    env[str(key)] = os.environ[key]
+            params = StdioServerParameters(command=str(command), args=[str(a) for a in binding.get("args") or []], env=env, cwd=binding.get("cwd"))
+            async with stdio_client(params) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    return await session.call_tool(tool, dict(arguments))
+        url = binding.get("url")
+        if not url:
+            raise ExecutionBlocked(f"action {action_id}: http mcp binding needs url")
+        async with streamablehttp_client(str(url), headers=headers) as (read, write, _):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                return await session.call_tool(tool, dict(arguments))
+
+    try:
+        result = asyncio.run(asyncio.wait_for(call(), timeout=float(binding.get("timeout_seconds", 30))))
+    except ExecutionBlocked:
+        raise
+    except Exception as exc:
+        raise HandlerError(f"action {action_id}: mcp tool {server}/{tool} failed: {exc!r}") from exc
+    if getattr(result, "isError", False):
+        raise HandlerError(f"action {action_id}: mcp tool {server}/{tool} returned an error: {_mcp_result(result)!r}")
+    return _mcp_result(result)
+
+
 @@HANDLERS@@
 
 
@@ -838,6 +1001,7 @@ __all__ = [
     "AdapterError", "IllegalChoice", "ExecutionBlocked", "HandlerError", "HandlerUnavailable", "PredicateError",
     "apply_policy", "build_payload", "check_preconditions", "classify", "decide", "decision_record", "default_log",
     "execute", "infer_state", "legal_actions", "parse_response", "question_fallbacks", "run", "threshold_for",
+    "set_ui_page", "set_mcp_caller",
 ]
 '''
 

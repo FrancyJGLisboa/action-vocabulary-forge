@@ -70,6 +70,34 @@ class ValidatorTests(unittest.TestCase):
         self.edit("action_registry.yaml", lambda d: d["actions"][0]["binding"].update({"kind": "bogus"}))
         self.assert_error("invalid kind")
 
+    def test_ui_and_mcp_binding_checks(self):
+        def ui(d, **extra):
+            d["actions"][0]["binding"] = {"kind": "ui", "locator": "#go", "evidence_refs": ["binding_retry_call"], **extra}
+        self.edit("action_registry.yaml", lambda d: ui(d, operation="hover"))
+        self.assert_error("ui operation must be one of")
+        self.edit("action_registry.yaml", lambda d: ui(d, operation="fill"))
+        self.assert_error("needs a 'value'")
+        self.edit("action_registry.yaml", lambda d: ui(d, operation="fill", arg_mapping={"record_id": "record_id", "value": "note"}))
+        errors = self.errors()
+        self.assertTrue(any("'value' is not a declared parameter" in e for e in errors), errors)
+        self.edit("action_registry.yaml", lambda d: ui(d, url="http://insecure.example"))
+        self.assert_error("ui url must be https")
+        self.edit("action_registry.yaml", lambda d: ui(d, operation="click", url="https://app.example.invalid/{record_id}", arg_mapping={"record_id": "record_id"}))
+        self.assertEqual(self.errors(), [])
+
+        def mcp(d, **extra):
+            d["actions"][0]["binding"] = {"kind": "mcp", "locator": "s/t", "server": "s", "tool": "t", "evidence_refs": ["binding_retry_call"], **extra}
+        self.edit("action_registry.yaml", lambda d: mcp(d))
+        self.assert_error("stdio mcp binding needs command")
+        self.edit("action_registry.yaml", lambda d: mcp(d, transport="http", url="http://x"))
+        self.assert_error("https:// url")
+        self.edit("action_registry.yaml", lambda d: mcp(d, transport="carrier-pigeon"))
+        self.assert_error("stdio or http")
+        self.edit("action_registry.yaml", lambda d: mcp(d, transport="stdio", command="validation-mcp", arg_mapping={"record_id": "record_id"}))
+        errors, warnings, _ = v.validate(self.bundle)
+        self.assertEqual(errors, [])
+        self.assertFalse(any("no generic renderer" in w for w in warnings))
+
     def test_arg_mapping_must_use_declared_parameters(self):
         self.edit("action_registry.yaml", lambda d: d["actions"][0]["binding"].__setitem__("arg_mapping", {"ghost": "x"}))
         self.assert_error("not a declared parameter")

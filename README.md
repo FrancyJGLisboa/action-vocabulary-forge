@@ -37,7 +37,7 @@ git clone https://github.com/FrancyJGLisboa/action-vocabulary-forge ~/projects/a
 ~/projects/action-vocabulary-forge/scripts/install.sh      # symlinks into Claude, Codex, Copilot, Gemini
 ```
 
-Requires Python 3.11+ and PyYAML. `TYPESAFE_API_KEY` is read from the
+Requires Python 3.11+ and PyYAML. `ui` handlers need Playwright and `mcp` handlers the `mcp` package, only on the host that runs them. `TYPESAFE_API_KEY` is read from the
 environment at call time and never written into a bundle.
 
 ## Layout

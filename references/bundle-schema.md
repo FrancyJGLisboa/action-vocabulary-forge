@@ -74,7 +74,8 @@ Kind-specific fields:
 - `python_callable`: `locator` is `module.path:callable`.
 - `http`: `locator` is an `https://` URL template (`{record_id}`), plus `method`, `headers` (non-secret), `body` (`field: dotted.path`), and `auth_env` (environment variable whose value becomes `Authorization: Bearer ...`).
 - `cli`: `argv` (list of templates), `cwd`, `env_allowlist`.
-- `mcp`: `server` and `tool`. `ui`: `locator` is the page/selector. Both render as stubs the host overrides.
+- `mcp`: `server`, `tool`, `transport: stdio | http`; stdio needs `command` (+ `args`, `cwd`, `env_allowlist`), http needs an `https://` `url` (+ `headers`, `auth_env`). Rendered with the MCP Python SDK (`pip install mcp`), or through a caller the host injects with `set_mcp_caller(fn)`.
+- `ui`: `operation: goto | click | fill | select | press | check | uncheck | read` (default click), `locator` is a Playwright selector template, optional `url` template opened first (`https://` or localhost), `browser`, `headless`. `fill`/`select`/`press` take their `value` from `arg_mapping`. Rendered with Playwright (`pip install playwright && playwright install chromium`), or on a page the host injects with `set_ui_page(page)`.
 
 Grade rule: the adapter generates a real handler only when at least one `binding.evidence_refs` entry has grade `verified_runtime` or `observed_trace` (the invocation was seen to run). `documented` or `verified_schema` prove existence, not invocation, and render a stub that names the missing evidence. The validator rejects a binding without evidence, an `arg_mapping` key that is not a declared parameter, and any binding value that looks like a secret.
 

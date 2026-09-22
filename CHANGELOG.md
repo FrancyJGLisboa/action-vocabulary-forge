@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 (2026-09-22)
+
+- `ui` bindings render to Playwright handlers (`goto/click/fill/select/press/check/uncheck/read` on a locator template, optional `url`), on a host-injected page (`set_ui_page`) or a headless browser per call.
+- `mcp` bindings render to MCP `tools/call` handlers over stdio or streamable HTTP via the MCP Python SDK, or through a host-injected caller (`set_mcp_caller`).
+- Missing SDKs raise `ExecutionBlocked` with the install command; nothing is silently skipped.
+- Validator: kind-specific checks for `ui` (operation, driver, url scheme, `value` for fill/select/press) and `mcp` (transport, command/url).
+- No binding kind renders as `stub:unsupported_kind` any more; stubs remain only for missing or unobserved evidence.
+
 ## 0.2.0 (2026-09-21)
 
 - `generate_adapter.py` renders handlers from evidence-graded `binding`s (`python_callable`, `http`, `cli`); `mcp`/`ui` and unobserved bindings become stubs that name the missing evidence.

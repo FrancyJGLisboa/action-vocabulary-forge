@@ -26,9 +26,12 @@ The module contains:
 | `generated:cli` | `subprocess.run(argv, shell=False)` with templated `argv`, `cwd`, `env_allowlist`, `timeout_seconds` | invocation observed |
 | `stub:no_binding` | raises `HandlerUnavailable` | the action has no `binding` |
 | `stub:unobserved_binding` | raises `HandlerUnavailable` naming the locator and current evidence refs | no `verified_runtime` / `observed_trace` evidence for the binding |
-| `stub:unsupported_kind:mcp` / `:ui` | raises `HandlerUnavailable` | MCP needs a per-server transport and UI needs a browser driver; neither is expressible generically from a locator |
+| `generated:mcp` | `tools/call` through the MCP Python SDK (stdio subprocess or streamable HTTP), or through the host's `set_mcp_caller(fn)` | invocation observed |
+| `generated:ui` | Playwright: open `url`, then `operation` on `locator`; on the host's page via `set_ui_page(page)` or a headless browser launched per call | invocation observed |
 
 Override any entry with `HANDLERS[action_id] = callable(state)`. A generated handler receives the call state `{**state, "decision": <decision record>}`, so `arg_mapping` paths may reference `record_id`, `context.row.id`, or `decision.selected_choice`. Without `arg_mapping`, arguments are the action's `parameters[].name` looked up in the call state; a missing required parameter raises `ExecutionBlocked` before any side effect. A handler that attempted the side effect and failed raises `HandlerError`.
+
+`ui` and `mcp` handlers import their SDK only when nothing was injected; a missing SDK raises `ExecutionBlocked` naming the install command, never a silent no-op. Hosts that already own a browser page or an MCP session inject them once at startup.
 
 Secrets never enter the bundle or the generated file: `auth_env` names an environment variable read at call time, and the validator rejects binding values that look like tokens.
 

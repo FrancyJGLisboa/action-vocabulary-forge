@@ -31,6 +31,7 @@ CRITERIA_SOURCES = {"static", "dynamic"}
 BINDING_KINDS = {"python_callable", "http", "cli", "mcp", "ui"}
 BINDING_EXECUTABLE_GRADES = {"verified_runtime", "observed_trace"}
 HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
+UI_OPERATIONS = {"goto", "click", "fill", "select", "press", "check", "uncheck", "read"}
 SECRET_PATTERN = re.compile(r"(?i)(bearer\s|api[_-]?key|password|secret|token)")
 PYTHON_LOCATOR = re.compile(r"^[\w.]+:[\w.]+$")
 REQUIRED_FILES = (
@@ -238,8 +239,26 @@ def validate(bundle: Path) -> tuple[list[str], list[str], dict[str, int]]:
             for field in ("server", "tool"):
                 if not binding.get(field):
                     errors.append(f"{owner}: mcp binding needs {field}")
-        if kind in {"mcp", "ui"}:
-            warnings.append(f"{owner}: kind {kind} has no generic renderer; handler will be generated as a stub")
+            transport = binding.get("transport", "stdio")
+            if transport not in {"stdio", "http"}:
+                errors.append(f"{owner}: mcp transport must be stdio or http")
+            elif transport == "stdio" and not binding.get("command"):
+                errors.append(f"{owner}: stdio mcp binding needs command")
+            elif transport == "http" and not (isinstance(binding.get("url"), str) and binding["url"].startswith("https://")):
+                errors.append(f"{owner}: http mcp binding needs an https:// url")
+        elif kind == "ui":
+            operation = binding.get("operation", "click")
+            if operation not in UI_OPERATIONS:
+                errors.append(f"{owner}: ui operation must be one of {sorted(UI_OPERATIONS)}")
+            if binding.get("driver", "playwright") != "playwright":
+                errors.append(f"{owner}: ui driver must be playwright")
+            url = binding.get("url")
+            if url is not None and not (isinstance(url, str) and url.startswith(("https://", "http://localhost", "http://127.0.0.1"))):
+                errors.append(f"{owner}: ui url must be https:// (or localhost)")
+            if operation in {"fill", "select", "press"}:
+                mapping = binding.get("arg_mapping") or {}
+                if "value" not in mapping and not any(isinstance(p, dict) and p.get("name") == "value" for p in action.get("parameters", [])):
+                    errors.append(f"{owner}: ui operation {operation} needs a 'value' parameter or arg_mapping entry")
         mapping = binding.get("arg_mapping")
         if mapping is not None:
             if not isinstance(mapping, dict):

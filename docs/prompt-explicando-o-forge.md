@@ -246,8 +246,9 @@ Não sozinho. Ele produz, para qualquer sistema, o bundle e o adapter; o sistema
 adapter em um ponto e fornecer o estado observável. Esse encaixe é pequeno, determinístico e
 igual para todos os sistemas, mas é uma mudança no sistema. "Qualquer sistema" vale para o que
 tem: saídas finitas e nomeáveis, escolha semântica, estado observável por código, execução
-observável. Websites e ferramentas MCP encaixam no modelo, mas seus handlers (`ui`, `mcp`) hoje
-são stubs que o host preenche.
+observável. Websites e ferramentas MCP encaixam no modelo: bindings `ui` viram handlers Playwright
+(abrir URL, clicar, preencher, ler um seletor) e bindings `mcp` viram chamadas `tools/call` via
+SDK do MCP (stdio ou HTTP), desde que a invocação tenha sido observada na descoberta.
 
 **O JEV pode executar algo errado?**
 Pode escolher errado; não pode executar errado. A escolha passa por: conjunto legal, threshold
