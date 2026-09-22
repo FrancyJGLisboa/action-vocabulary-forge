@@ -4,9 +4,15 @@
 
 *One-page explainer ([PDF](docs/executive-comic.pdf)). The Forge does not inject the JEV into a
 system; it compiles the system's decisions into a bundle and generates the adapter the system
-calls at one decision point. Note: panel 6 uses illustrative binding field names; the real
-schema is `binding: {kind: python_callable, locator: module:callable, ...}`, see
-[references/bundle-schema.md](references/bundle-schema.md).*
+calls at one decision point. The comic captures the core architecture, but the runtime has
+evolved since it was rendered: in panel 4, read JEV as the configured bounded decision model
+(current versions can also use the local Laya provider); in panel 7, abstention is not
+necessarily terminal — an abstaining primary decision can optionally escalate to a second
+decision model before the declared fallback. Escalation remains limited to the legal action set
+and is blocked for actions that require confirmation. Panel 6 uses illustrative binding field
+names; the real schema is `binding: {kind: python_callable, locator: module:callable, ...}`, see
+[references/bundle-schema.md](references/bundle-schema.md). In production, bounded decision
+models run inside deterministic code.*
 
 Point it at a system, approve the release gate, use it. The Forge turns a
 codebase, API, UI, SOP set, or trace log into an **Action Bundle**: a closed,
