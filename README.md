@@ -6,7 +6,11 @@
 system; it compiles the system's decisions into a bundle and generates the adapter the system
 calls at one decision point. Note: panel 6 uses illustrative binding field names; the real
 schema is `binding: {kind: python_callable, locator: module:callable, ...}`, see
-[references/bundle-schema.md](references/bundle-schema.md).*
+[references/bundle-schema.md](references/bundle-schema.md). Since the comic was drawn: the
+runtime model can also be a local Laya checkpoint (`provider: laya`), and an abstention can
+go to an opt-in second decider such as an LLM (`escalate=`) before the fallback, limited to
+legal actions and never to one that requires confirmation. So panel 4's "only the closed JEV
+runs" and panel 7's "abstain" are the defaults, not the only paths.*
 
 Point it at a system, approve the release gate, use it. The Forge turns a
 codebase, API, UI, SOP set, or trace log into an **Action Bundle**: a closed,
