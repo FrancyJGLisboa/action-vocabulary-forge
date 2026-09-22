@@ -484,8 +484,16 @@ def parse_response(
 # --- policy -----------------------------------------------------------------------
 
 def question_fallbacks(question_id: str) -> set[str]:
+    """The actions this question may fall back to, and which are therefore never gated.
+
+    A Noul's ``no_action_id`` counts only when the question declares no
+    ``abstention_action_id``. Otherwise "no" is a conclusion like any other and must clear its
+    own threshold: a control test that can record an exception ungated is not a control test.
+    """
     question = QUESTIONS[question_id]
-    values = {question.get("abstention_action_id"), question.get("no_action_id")}
+    values = {question.get("abstention_action_id")}
+    if not question.get("abstention_action_id"):
+        values.add(question.get("no_action_id"))
     values.add(question.get("abstention_choice"))
     if question.get("type", "choice") == "choice":
         for item in question.get("choices", []):
@@ -496,6 +504,7 @@ def question_fallbacks(question_id: str) -> set[str]:
 
 def _fallback_action(question: Mapping[str, Any]) -> str | None:
     fallback = question.get("abstention_choice") or question.get("abstention_action_id") or question.get("no_action_id")
+    # (abstention_choice is a Choice id; the next line resolves it to its executor action)
     if fallback and question.get("type", "choice") == "choice":
         fallback = next((item["executor_action_id"] for item in question["choices"] if item["id"] == fallback), fallback)
     return fallback

@@ -193,7 +193,12 @@ Example:
 Choice IDs must map to executor actions on the referenced surface. `type` defaults
 to `choice`; a `noul` question uses `yes_action_id` and `no_action_id`, while a
 `score` question uses ordered `levels` with `id`, `criterion`, and
-`executor_action_id`. Non-Choice questions declare `abstention_action_id`.
+`executor_action_id`. Non-Choice questions declare `abstention_action_id`; once they do, a Noul's
+`no_action_id` is a conclusion like any other and must clear its own threshold. Only when no
+`abstention_action_id` is declared does "no" double as the free fallback. A Noul pair that needs
+three outcomes (yes / no / cannot tell) therefore names a distinct abstention action, and the
+"cannot tell" case arrives as a confidence below the calibrated threshold rather than as an answer
+the model has to volunteer.
 
 A question may carry a compact wording for providers with a small context window:
 `instruction_compact` on the question and `criterion_compact` on every choice (or none). The

@@ -138,6 +138,42 @@ class PolicyTests(unittest.TestCase):
         decision = m.parse_response({"answers": {Q: {"choice": "retry"}}}, Q)
         self.assertTrue(m.apply_policy(decision).abstained)
 
+    def test_a_noul_no_answer_is_gated_when_an_abstention_is_declared(self):
+        """"no" is a conclusion; only the declared abstention escapes the threshold."""
+        bundle = load_example()
+        bundle["policy"] = {"min_confidence": 0.9}
+        bundle["questions"] = {
+            "is_transient": {"question_id": "is_transient", "surface_id": "resolve_validation_failure", "type": "noul",
+                             "instruction": "?", "yes_action_id": "retry", "no_action_id": "human_review",
+                             "abstention_action_id": "human_review"},
+        }
+        m = import_bundle(bundle)
+        # with an abstention declared, "no" is not a free fallback...
+        self.assertEqual(m.question_fallbacks("is_transient"), {"human_review"})
+        bundle["questions"]["is_transient"].pop("abstention_action_id")
+        bundle["questions"]["is_transient"]["no_action_id"] = "human_review"
+        m2 = import_bundle(bundle)
+        self.assertEqual(m2.question_fallbacks("is_transient"), {"human_review"})
+
+    def test_a_noul_no_answer_is_thresholded_against_a_distinct_abstention(self):
+        bundle = load_example()
+        bundle["policy"] = {"min_confidence": 0.9}
+        bundle["actions"]["defer"] = {**bundle["actions"]["human_review"], "action_id": "defer"}
+        bundle["handler_status"]["defer"] = bundle["handler_status"]["human_review"]
+        bundle["questions"] = {
+            "is_transient": {"question_id": "is_transient", "surface_id": "resolve_validation_failure", "type": "noul",
+                             "instruction": "?", "yes_action_id": "retry", "no_action_id": "human_review",
+                             "abstention_action_id": "defer"},
+        }
+        m = import_bundle(bundle)
+        self.assertEqual(m.question_fallbacks("is_transient"), {"defer"})
+        self.assertEqual(m.threshold_for("is_transient", "human_review"), 0.9)   # gated
+        self.assertEqual(m.threshold_for("is_transient", "defer"), 0.0)          # the abstention is free
+        low = m.apply_policy(m.parse_response({"answers": {"is_transient": {"noul": 0.45}}}, "is_transient"))
+        self.assertEqual((low.action_id, low.abstained), ("defer", True))
+        high = m.apply_policy(m.parse_response({"answers": {"is_transient": {"noul": 0.02}}}, "is_transient"))
+        self.assertEqual((high.action_id, high.abstained), ("human_review", False))
+
     def test_noul_and_score_fallbacks(self):
         bundle = load_example()
         bundle["policy"] = {"min_confidence": 0.95}
