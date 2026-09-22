@@ -1,5 +1,13 @@
 # action-vocabulary-forge
 
+[![The Action-Vocabulary-Forge, explained in one page](docs/img/executive-comic.jpg)](docs/executive-comic.pdf)
+
+*One-page explainer ([PDF](docs/executive-comic.pdf)). The Forge does not inject the JEV into a
+system; it compiles the system's decisions into a bundle and generates the adapter the system
+calls at one decision point. Note: panel 6 uses illustrative binding field names; the real
+schema is `binding: {kind: python_callable, locator: module:callable, ...}`, see
+[references/bundle-schema.md](references/bundle-schema.md).*
+
 Point it at a system, approve the release gate, use it. The Forge turns a
 codebase, API, UI, SOP set, or trace log into an **Action Bundle**: a closed,
 evidence-graded vocabulary of states, actions, transitions and decision
