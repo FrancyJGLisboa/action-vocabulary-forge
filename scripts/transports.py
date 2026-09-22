@@ -64,6 +64,28 @@ def _load_laya(checkpoint: str) -> Any:
     return agent
 
 
+def _normalise_confidence(answer: dict[str, Any]) -> dict[str, Any]:
+    """Report the winning probability as `confidence`, keeping the native value beside it.
+
+    Providers disagree on what `confidence` means: TypeSafe reports something close to the
+    winning probability, Laya reports a calibrated margin that tops out well below 1. Thresholds
+    are calibrated per provider, but the confidence bins are fixed (0, .5, .6, .7, .8, .9, 1), so
+    a margin-scaled value collapses into the bottom bin and nothing ever calibrates. The winning
+    probability is the one quantity that means the same thing everywhere.
+    """
+    probabilities = answer.get("probabilities")
+    if isinstance(probabilities, Mapping) and probabilities:
+        try:
+            winner = max(float(v) for v in probabilities.values())
+        except (TypeError, ValueError):
+            return answer
+        native = answer.get("confidence")
+        if native is not None:
+            answer["native_confidence"] = native
+        answer["confidence"] = winner
+    return answer
+
+
 def laya_transport(model: str = "laya:typed-decisions", max_state_chars: int = 2000) -> Callable[[dict[str, Any]], dict[str, Any]]:
     """One in-process Laya ``predict`` per question, answers merged into the JEV response shape."""
     checkpoint = model.split(":", 1)[1] if ":" in model else "typed-decisions"
@@ -80,7 +102,7 @@ def laya_transport(model: str = "laya:typed-decisions", max_state_chars: int = 2
             answer = (result.get("answers") or {}).get(qid)
             if not isinstance(answer, Mapping):
                 raise RuntimeError(f"laya returned no answer for {qid}")
-            answers[qid] = dict(answer)
+            answers[qid] = _normalise_confidence(dict(answer))
             chars += len(json.dumps(state, default=str)) + len(json.dumps(question, default=str))
         return {"answers": answers, "model": f"laya:{checkpoint}", "usage": {"input_chars": chars}}
 

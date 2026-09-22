@@ -52,7 +52,21 @@ class LayaTransportTests(unittest.TestCase):
         self.assertEqual(response["model"], "laya:typed-decisions")
         self.assertEqual(set(response["answers"]), {"a", "b"})
         self.assertEqual(response["answers"]["a"]["choice"], "k1")
+        self.assertAlmostEqual(response["answers"]["a"]["confidence"], 0.91)
         self.assertIn("input_chars", response["usage"])
+
+    def test_confidence_becomes_the_winning_probability(self):
+        class MarginAgent:
+            def predict(self, state, questions):
+                (qid, _), = questions.items()
+                return {"answers": {qid: {"choice": "k1", "confidence": 0.13,
+                                          "probabilities": {"k1": 0.62, "k2": 0.38}}}}
+        with fake_laya(MarginAgent()):
+            response = transports.laya_transport()(
+                {"state": {"context": "x"}, "questions": {"a": {"type": "choice", "criteria": {"k1": "c1", "k2": "c2"}}}})
+        answer = response["answers"]["a"]
+        self.assertEqual(answer["confidence"], 0.62)
+        self.assertEqual(answer["native_confidence"], 0.13)
 
     def test_missing_sdk_is_a_clear_error(self):
         with mock.patch.dict(sys.modules, {"laya": None}):
