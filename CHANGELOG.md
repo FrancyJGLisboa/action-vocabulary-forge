@@ -2,6 +2,7 @@
 
 ## 0.4.0 (2026-09-22)
 
+- `calibrate_thresholds.py --min-threshold` (default 0.5): a calibrated threshold can no longer fall to the bottom floor and silently ungate an action when a small sample makes every confidence band look perfect. Clamped values are marked `*` and the floor is recorded in the policy. Found when a local model produced its only wrong conclusion on an action calibrated to 0.00.
 - `criterion_compact` / `instruction_compact`: a question may carry a short wording used by providers with a small context window (`COMPACT_PROVIDERS`, currently `laya`); `FORGE_COMPACT_CRITERIA=1|0` forces it. The validator requires compact criteria on every choice or none.
 - `provider: laya`: in-process local transport (Laya, Apache-2.0) with the same answer shape as TypeSafe System One, embedded into generated adapters; `FORGE_PROVIDER` env override; `default_transport()`.
 - Calibration skips records without a confidence (deterministic decisions); `evaluate_decisions.py` reports deterministic agreement separately (a disagreement holds the release) and gains `--by-model`.

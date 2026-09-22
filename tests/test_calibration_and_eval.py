@@ -83,6 +83,19 @@ class CalibrateTests(unittest.TestCase):
         self.assertNotIn("questions", policy)
         self.assertTrue(all(row["suggested"] is None for row in rows))
 
+    def test_a_suggestion_below_the_floor_is_raised_to_it(self):
+        """All-perfect bins on a small sample would otherwise leave the action ungated."""
+        records = [record(f"lo{i}", "retry", "retry", 0.30) for i in range(20)]
+        records += [record(f"hi{i}", "retry", "retry", 0.95) for i in range(20)]
+        policy, rows = calibrate_thresholds.calibrate(EXAMPLE, records, min_samples=15)
+        row = next(r for r in rows if r["action_id"] == "retry")
+        self.assertEqual(row["suggested"], calibrate_thresholds.MIN_THRESHOLD)
+        self.assertTrue(row["clamped"])
+        self.assertEqual(policy["questions"][Q]["actions"]["retry"], calibrate_thresholds.MIN_THRESHOLD)
+        self.assertEqual(policy["min_threshold"], calibrate_thresholds.MIN_THRESHOLD)
+        policy, rows = calibrate_thresholds.calibrate(EXAMPLE, records, min_samples=15, min_threshold=0.0)
+        self.assertEqual(next(r for r in rows if r["action_id"] == "retry")["suggested"], 0.0)
+
     def test_fallback_records_are_excluded(self):
         records = synthetic_log() + [record(f"fb{i}", "human_review", "human_review", 0.3) for i in range(40)]
         policy, rows = calibrate_thresholds.calibrate(EXAMPLE, records)

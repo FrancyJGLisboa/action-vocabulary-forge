@@ -23,18 +23,23 @@ from decision_history import (  # noqa: E402
 )
 
 
+MIN_THRESHOLD = 0.5
+
+
 def calibrate(
     bundle: Path,
     records: list[dict[str, Any]],
     *,
     min_accuracy: float = 0.97,
     min_samples: int = 30,
+    min_threshold: float = MIN_THRESHOLD,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Return (policy_block, table_rows) from labeled training records."""
     spec, questions = load_questions(bundle)
     policy: dict[str, Any] = dict(spec.get("policy") or {})
     policy.setdefault("default_when_uncalibrated", "abstain")
     policy["min_accuracy"] = min_accuracy
+    policy["min_threshold"] = min_threshold
     scoped: dict[str, Any] = {}
     rows: list[dict[str, Any]] = []
     for question_id, question in questions.items():
@@ -47,7 +52,14 @@ def calibrate(
         for qid, action_id, group in groups:
             bins = calibration_bins(group)
             suggested = suggest_threshold(bins, min_accuracy) if len(group) >= min_samples else None
-            rows.append({"question_id": qid, "action_id": action_id, "n": len(group), "bins": bins, "suggested": suggested})
+            clamped = False
+            if suggested is not None and suggested < min_threshold:
+                # The history says even the lowest band is accurate enough, which would leave the
+                # action ungated. On a small sample that is overfitting, not a licence: a model's
+                # top choice below this confidence is barely ahead of its runner-up.
+                suggested, clamped = min_threshold, True
+            rows.append({"question_id": qid, "action_id": action_id, "n": len(group), "bins": bins,
+                         "suggested": suggested, "clamped": clamped})
             if suggested is None:
                 continue
             if action_id is None:
@@ -62,6 +74,7 @@ def calibrate(
 
 
 def print_table(rows: list[dict[str, Any]]) -> None:
+    """A * marks a threshold raised to the floor because the history suggested a lower one."""
     print(f"{'question':32} {'action':28} {'n':>5}  {'suggested':>9}  bins (n/acc)")
     for row in rows:
         def _acc(cell: dict[str, Any]) -> str:
@@ -71,7 +84,7 @@ def print_table(rows: list[dict[str, Any]]) -> None:
             "{}:{}/{}".format(key, cell["n"], _acc(cell))
             for key, cell in row["bins"].items() if cell["n"]
         )
-        suggested = "-" if row["suggested"] is None else f"{row['suggested']:.2f}"
+        suggested = "-" if row["suggested"] is None else (format(row["suggested"], ".2f") + ("*" if row.get("clamped") else ""))
         print(f"{row['question_id']:32} {(row['action_id'] or '(question)'):28} {row['n']:5d}  {suggested:>9}  {bins}")
 
 
@@ -89,6 +102,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--labels", type=Path, default=None)
     parser.add_argument("--min-accuracy", type=float, default=0.97)
     parser.add_argument("--min-samples", type=int, default=30)
+    parser.add_argument("--min-threshold", type=float, default=MIN_THRESHOLD,
+                        help=f"floor for a calibrated threshold (default {MIN_THRESHOLD}); a lower suggestion is raised to it")
     parser.add_argument("--heldout-fraction", type=float, default=0.3)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--write", action="store_true", help="rewrite policy in jev_adapter_spec.yaml")
@@ -104,7 +119,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"wrote policy.default_when_uncalibrated: abstain to {args.bundle / 'jev_adapter_spec.yaml'}")
         return 0
     print(f"records={len(records)} labeled={len(labeled)} dropped_unlabeled={dropped} train={len(train)} heldout={len(heldout)}")
-    policy, rows = calibrate(args.bundle, train, min_accuracy=args.min_accuracy, min_samples=args.min_samples)
+    policy, rows = calibrate(args.bundle, train, min_accuracy=args.min_accuracy, min_samples=args.min_samples,
+                             min_threshold=args.min_threshold)
     print_table(rows)
     print("\npolicy:")
     print(yaml.safe_dump(policy, sort_keys=False).rstrip())
