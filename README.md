@@ -30,6 +30,15 @@ actions and their criteria, choose one"). Code decides what is legal, applies
 thresholds and abstention, re-checks preconditions, and executes through a
 handler that was generated from an observed binding, never from a guess.
 
+## Status
+
+v0.3. One real system wired end to end (a question-routing surface in an internal
+ag-commodity tool: 5 generated handlers, JEV 53/54 vs 33/54 for the keyword
+resolver it replaced, release gate approved). `python_callable`, `http` and `cli`
+handlers have run for real; `ui` (Playwright) and `mcp` (MCP SDK) renderers are
+unit-tested at the SDK boundary but not yet exercised against a live browser or
+server. Expect the bundle schema to move; the validator is the contract.
+
 ## Install as a skill
 
 ```bash

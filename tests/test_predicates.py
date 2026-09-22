@@ -8,13 +8,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from predicates import PredicateError, evaluate_all, evaluate_predicate, parse_predicate  # noqa: E402
 
-ONTOMAP_BUNDLE = next(
-    (p for p in (
-        ROOT.parent / "ontomap-validation",
-        Path.home() / "Documents/Codex/2026-09-21/bas/outputs/ontomap-validation",
-    ) if p.is_dir()),
-    ROOT.parent / "ontomap-validation",
-)
+# Optional: a second bundle placed next to the repo (any name) exercises real-world predicates.
+EXTRA_BUNDLE = next((p for p in sorted(ROOT.parent.glob("*-validation")) if (p / "state_registry.yaml").is_file()), ROOT.parent / "extra-validation")
 
 
 def bundle_predicates(bundle: Path) -> list[str]:
@@ -41,9 +36,9 @@ class PredicateTests(unittest.TestCase):
         for text in preds:
             parse_predicate(text)
 
-    @unittest.skipUnless(ONTOMAP_BUNDLE.is_dir(), "ontomap-validation bundle not present")
-    def test_ontomap_bundle_predicates_parse(self):
-        for text in bundle_predicates(ONTOMAP_BUNDLE):
+    @unittest.skipUnless(EXTRA_BUNDLE.is_dir(), "no extra *-validation bundle next to the repo")
+    def test_extra_bundle_predicates_parse(self):
+        for text in bundle_predicates(EXTRA_BUNDLE):
             parse_predicate(text)
 
     def test_operators(self):
