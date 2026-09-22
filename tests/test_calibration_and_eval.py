@@ -89,6 +89,31 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(([r["case_id"] for r in kept], excluded), (["c1"], 2))
 
 
+    def test_fallbacks_match_the_generated_adapter(self):
+        """Calibration and the gate must agree with the runtime on what escapes a threshold."""
+        from helpers import import_bundle, load_example
+
+        shapes = {
+            "noul_distinct_abstention": {"type": "noul", "yes_action_id": "retry", "no_action_id": "human_review",
+                                         "abstention_action_id": "defer"},
+            "noul_no_is_abstention": {"type": "noul", "yes_action_id": "retry", "no_action_id": "human_review",
+                                      "abstention_action_id": "human_review"},
+            "noul_without_abstention": {"type": "noul", "yes_action_id": "retry", "no_action_id": "human_review"},
+        }
+        bundle = load_example()
+        bundle["actions"]["defer"] = {**bundle["actions"]["human_review"], "action_id": "defer"}
+        bundle["handler_status"]["defer"] = bundle["handler_status"]["human_review"]
+        bundle["questions"] = {
+            qid: {"question_id": qid, "surface_id": "resolve_validation_failure", "instruction": "?", **shape}
+            for qid, shape in shapes.items()
+        }
+        adapter = import_bundle(bundle)
+        for qid, question in bundle["questions"].items():
+            with self.subTest(qid):
+                self.assertEqual(dh.question_fallbacks(question), adapter.question_fallbacks(qid))
+        self.assertEqual(dh.question_fallbacks(bundle["questions"]["noul_distinct_abstention"]), {"defer"})
+
+
 class CalibrateTests(unittest.TestCase):
     def test_calibrate_groups(self):
         policy, rows = calibrate_thresholds.calibrate(EXAMPLE, synthetic_log(), min_accuracy=0.97, min_samples=30)

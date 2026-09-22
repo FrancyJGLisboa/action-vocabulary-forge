@@ -163,7 +163,11 @@ def load_questions(bundle: Path) -> tuple[dict[str, Any], dict[str, dict[str, An
 
 
 def question_fallbacks(question: Mapping[str, Any]) -> set[str]:
-    values = {question.get("abstention_action_id"), question.get("no_action_id"), question.get("abstention_choice")}
+    """Same rule as the generated adapter's question_fallbacks: a Noul's no_action_id is a
+    fallback only when the question declares no abstention_action_id."""
+    values = {question.get("abstention_action_id"), question.get("abstention_choice")}
+    if not question.get("abstention_action_id"):
+        values.add(question.get("no_action_id"))
     if question.get("type", "choice") == "choice":
         for item in question.get("choices", []):
             if item.get("id") == question.get("abstention_choice"):

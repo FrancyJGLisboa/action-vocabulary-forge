@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fix: calibration and the release gate treated a Noul's `no_action_id` as a free fallback even when the question declares a distinct `abstention_action_id`, so "no" was never calibrated and the gate never required a threshold for it. They now use the adapter's rule; a test pins the two implementations together.
 - Escalation cascade: `decide()` / `run()` take `escalate=callable(context, decision, legal) -> action_id | None`. An abstained decision goes to the second decider (an LLM, a rule) before the fallback runs. It is offered only the question's non-fallback actions legal from the current state; `None` keeps the fallback; anything else raises `IllegalChoice`. Dynamic-candidate questions are not escalated.
 - `Decision.decided_by` and the log field `decided_by`: `jev | fallback | escalation`. An escalated decision keeps `abstained: true` (JEV did abstain) and still passes every execution check; an escalated action with `requires_confirmation` is always blocked, even with `confirmed=True`.
 - `label_source` on labels (JSONL/CSV column or inline in the log; missing means `human`). `evaluate_decisions.py` judges the release gate on human labels only and prints `excluded_machine_labeled`: an LLM that labels and escalates would otherwise grade itself. Calibration accepts every source and prints the counts.
