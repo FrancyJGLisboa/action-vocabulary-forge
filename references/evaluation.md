@@ -49,6 +49,21 @@ The generated adapter writes one JSONL record per decision or execution attempt 
 
 Records are split by `case_id` (default 30% held out, seed 7) and only the training split is used. For every question, and for every proposed non-fallback action within it, confidences are binned (`0-0.5, 0.5-0.6, ..., 0.9-1`) and accuracy is `proposed_action_id == ground_truth_action_id`. The suggested threshold is the lowest bin floor whose cumulative accuracy from the top bin down stays at or above `--min-accuracy` (0.97). A group needs `--min-samples` (30) records; otherwise it stays uncalibrated, which the adapter treats as abstain. A suggestion below `--min-threshold` (0.5) is raised to that floor and marked `*` in the table: when every band looks perfect on a small sample the rule would otherwise return the lowest floor and leave the action ungated, which is overfitting rather than a licence to act on a weak answer. `--write` replaces `policy` in `jev_adapter_spec.yaml` and stamps `calibrated_at` and `calibration_source`.
 
+## Without a bundle: jev_gate.py
+
+`scripts/jev_gate.py calibrate|evaluate` applies the same calibration rule and gate checks to a
+plain decision log. A record is `case_id, question_id` plus `answer, confidence` or the raw System
+One answer as `jev` (Choice: the option; Noul: `yes` at >= 0.5 with confidence `max(p, 1-p)`;
+Score: the rounded level), and optionally `truth, label_source, legal, latency_ms, usage, model`.
+`--abstain [QID=]VALUE` names the answer that means "a person takes it" (default `abstain`); it
+is the fallback, never gated, and a truth equal to it is a case that should have abstained.
+`calibrate` writes `thresholds.json` (the `policy` block plus `abstain`). `evaluate` replays those
+thresholds on the held-out split (human labels only): an answer below its threshold becomes the
+abstain value. It reports raw model accuracy, accuracy of the answers acted on, abstention
+accuracy, the automation rate and illegal answers (when `legal` is given), then the gate. The
+bundle-only checks (validator, action precision, surface coverage, replacement rate, an
+abstention path per question) do not apply.
+
 ## Running the eval
 
     python3 scripts/evaluate_decisions.py ./action-bundle --log decision_log.jsonl --labels labels.jsonl [--json eval.json]

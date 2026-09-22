@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `scripts/jev_gate.py calibrate|evaluate`: thresholds and the release gate for any JEV or Laya decision log, with no bundle and no PyYAML. Accepts plain `answer/confidence` or the raw System One answer (`choice`, `noul`, `score`), per-question abstain values, human-labels-only gate, and replays the thresholds on the held-out split to report the automation rate.
+- The calibration rule, metrics and bundle-free gate checks moved into `decision_history.py` (`calibrate_groups`, `log_metrics`, `gate_failures`, `threshold_failures`); `calibrate_thresholds.py` and `evaluate_decisions.py` now call them, with unchanged output.
 - Fix: calibration and the release gate treated a Noul's `no_action_id` as a free fallback even when the question declares a distinct `abstention_action_id`, so "no" was never calibrated and the gate never required a threshold for it. They now use the adapter's rule; a test pins the two implementations together.
 - Escalation cascade: `decide()` / `run()` take `escalate=callable(context, decision, legal) -> action_id | None`. An abstained decision goes to the second decider (an LLM, a rule) before the fallback runs. It is offered only the question's non-fallback actions legal from the current state; `None` keeps the fallback; anything else raises `IllegalChoice`. Dynamic-candidate questions are not escalated.
 - `Decision.decided_by` and the log field `decided_by`: `jev | fallback | escalation`. An escalated decision keeps `abstained: true` (JEV did abstain) and still passes every execution check; an escalated action with `requires_confirmation` is always blocked, even with `confirmed=True`.

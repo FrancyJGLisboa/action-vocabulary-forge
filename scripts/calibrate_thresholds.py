@@ -19,12 +19,9 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from decision_history import (  # noqa: E402
-    attach_labels, calibration_bins, label_source_counts, load_questions, question_fallbacks, read_labels, read_log, split_cases,
-    suggest_threshold,
+    MIN_THRESHOLD, attach_labels, calibrate_groups, print_calibration_table, label_source_counts, load_questions, question_fallbacks, read_labels,
+    read_log, split_cases,
 )
-
-
-MIN_THRESHOLD = 0.5
 
 
 def calibrate(
@@ -41,52 +38,15 @@ def calibrate(
     policy.setdefault("default_when_uncalibrated", "abstain")
     policy["min_accuracy"] = min_accuracy
     policy["min_threshold"] = min_threshold
-    scoped: dict[str, Any] = {}
-    rows: list[dict[str, Any]] = []
-    for question_id, question in questions.items():
-        fallbacks = question_fallbacks(question)
-        scoped_entry: dict[str, Any] = {}
-        subset = [r for r in records if r.get("question_id") == question_id and r.get("proposed_action_id") not in fallbacks]
-        groups: list[tuple[str, str | None, list[dict[str, Any]]]] = [(question_id, None, subset)]
-        for action_id in sorted({r.get("proposed_action_id") for r in subset if r.get("proposed_action_id")}):
-            groups.append((question_id, action_id, [r for r in subset if r.get("proposed_action_id") == action_id]))
-        for qid, action_id, group in groups:
-            bins = calibration_bins(group)
-            suggested = suggest_threshold(bins, min_accuracy) if len(group) >= min_samples else None
-            clamped = False
-            if suggested is not None and suggested < min_threshold:
-                # The history says even the lowest band is accurate enough, which would leave the
-                # action ungated. On a small sample that is overfitting, not a licence: a model's
-                # top choice below this confidence is barely ahead of its runner-up.
-                suggested, clamped = min_threshold, True
-            rows.append({"question_id": qid, "action_id": action_id, "n": len(group), "bins": bins,
-                         "suggested": suggested, "clamped": clamped})
-            if suggested is None:
-                continue
-            if action_id is None:
-                scoped_entry["min_confidence"] = suggested
-            else:
-                scoped_entry.setdefault("actions", {})[action_id] = suggested
-        if scoped_entry:
-            scoped[question_id] = scoped_entry
+    fallbacks = {qid: question_fallbacks(q) for qid, q in questions.items()}
+    scoped, rows = calibrate_groups(records, fallbacks, min_accuracy=min_accuracy, min_samples=min_samples,
+                                    min_threshold=min_threshold)
     if scoped:
         policy["questions"] = scoped
     return policy, rows
 
 
-def print_table(rows: list[dict[str, Any]]) -> None:
-    """A * marks a threshold raised to the floor because the history suggested a lower one."""
-    print(f"{'question':32} {'action':28} {'n':>5}  {'suggested':>9}  bins (n/acc)")
-    for row in rows:
-        def _acc(cell: dict[str, Any]) -> str:
-            return "-" if cell["acc"] is None else format(cell["acc"], ".2f")
-
-        bins = " ".join(
-            "{}:{}/{}".format(key, cell["n"], _acc(cell))
-            for key, cell in row["bins"].items() if cell["n"]
-        )
-        suggested = "-" if row["suggested"] is None else (format(row["suggested"], ".2f") + ("*" if row.get("clamped") else ""))
-        print(f"{row['question_id']:32} {(row['action_id'] or '(question)'):28} {row['n']:5d}  {suggested:>9}  {bins}")
+print_table = print_calibration_table
 
 
 def write_policy(bundle: Path, policy: dict[str, Any], source: str) -> None:

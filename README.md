@@ -93,9 +93,26 @@ scripts/generate_adapter.py         bundle -> Python adapter (embeds scripts/pre
 scripts/calibrate_thresholds.py     decision log + labels -> policy thresholds
 scripts/evaluate_decisions.py       held-out metrics + release gate
 scripts/run_jev_choice.py           minimal manual JEV call for a compiled surface
+scripts/jev_gate.py                 calibrate + release gate for any JEV decision log, no bundle
+scripts/decision_history.py         shared core: labels, split, calibration, metrics, gate checks
 examples/validation-bundle/         the reference bundle used by the tests
 tests/                              unit tests per feature plus test_end_to_end.py
 ```
+
+## Calibration and gate without a bundle
+
+Using JEV (or Laya) for routing, scoring or classification with no action to execute? You
+still need thresholds from data and a held-out check on human labels. `jev_gate.py` does only
+that: one JSONL record per decision (`case_id, question_id, answer, confidence, truth`, or the
+raw JEV answer as `jev`), no bundle, no PyYAML.
+
+```bash
+python3 scripts/jev_gate.py calibrate decisions.jsonl --abstain human --out thresholds.json
+python3 scripts/jev_gate.py evaluate  decisions.jsonl --abstain human --thresholds thresholds.json
+```
+
+It shares its core (`decision_history.py`) with the bundle scripts, so the calibration rule,
+the 0.5 floor and the human-labels-only gate are the same code.
 
 ## Try it
 
