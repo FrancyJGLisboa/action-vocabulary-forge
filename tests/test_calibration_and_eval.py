@@ -72,6 +72,23 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual((len(labeled), dropped), (1, 1))
 
 
+    def test_label_source_defaults_to_human(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "labels.jsonl"
+            path.write_text(
+                json.dumps({"case_id": "c1", "question_id": "q", "ground_truth_action_id": "retry"}) + "\n"
+                + json.dumps({"case_id": "c2", "question_id": "q", "ground_truth_action_id": "retry", "label_source": "llm"}) + "\n"
+            )
+            labels = dh.read_labels(path, with_source=True)
+        self.assertEqual(labels, {("c1", "q"): ("retry", "human"), ("c2", "q"): ("retry", "llm")})
+        records = [{"case_id": "c1", "question_id": "q"}, {"case_id": "c2", "question_id": "q"},
+                   {"case_id": "c3", "question_id": "q", "ground_truth_action_id": "retry", "label_source": "llm"}]
+        labeled, _ = dh.attach_labels(records, labels)
+        self.assertEqual([r["label_source"] for r in labeled], ["human", "llm", "llm"])
+        kept, excluded = dh.human_labeled(labeled)
+        self.assertEqual(([r["case_id"] for r in kept], excluded), (["c1"], 2))
+
+
 class CalibrateTests(unittest.TestCase):
     def test_calibrate_groups(self):
         policy, rows = calibrate_thresholds.calibrate(EXAMPLE, synthetic_log(), min_accuracy=0.97, min_samples=30)
@@ -187,6 +204,30 @@ class EvaluateTests(unittest.TestCase):
                 code = evaluate_decisions.main([str(bundle), "--log", str(log), "--all"])
             self.assertEqual(code, 2)
             self.assertIn("no calibrated threshold", out.getvalue())
+
+    def test_machine_labels_never_judge_the_gate(self):
+        records = [{**r, "label_source": "llm"} for r in self.good_records()]
+        code, result, text = self.run_eval(records)
+        self.assertEqual(code, 2)
+        self.assertEqual(result["evaluated"], 0)
+        self.assertIn("excluded_machine_labeled=50", text)
+        self.assertTrue(any("fewer than" in f for f in result["failures"]))
+
+    def test_escalated_records_are_judged_as_decisions(self):
+        def escalated(case_id, truth):
+            return {**record(case_id, "retry", truth, 0.5, abstained=True, action="retry"), "decided_by": "escalation"}
+
+        code, result, _ = self.run_eval(self.good_records() + [escalated(f"e{i}", "retry") for i in range(4)])
+        m = result["metrics"]
+        self.assertEqual(m["escalation_accuracy"], {"count": 4, "total": 4, "pct": 1.0})
+        self.assertEqual(m["boundary_accuracy"], {"count": 49, "total": 49, "pct": 1.0})
+        self.assertEqual(code, 0)
+        # An escalation that acted where a human would have stopped is not a correct abstention.
+        code, result, _ = self.run_eval(self.good_records() + [escalated(f"x{i}", "human_review") for i in range(10)])
+        m = result["metrics"]
+        self.assertEqual(m["escalation_accuracy"]["count"], 0)
+        self.assertEqual(m["abstention_accuracy"], {"count": 10, "total": 20, "pct": 0.5})
+        self.assertEqual(code, 2)
 
 
 if __name__ == "__main__":

@@ -13,7 +13,8 @@ The module contains:
 - response parsing for `Choice`, `Noul`, and `Score` questions, with `IllegalChoice` on anything outside the legal set;
 - `threshold_for()` / `apply_policy()`: per-action, per-question, then global thresholds; an uncalibrated action abstains unless `policy.default_when_uncalibrated: allow`;
 - the embedded predicate evaluator (`check_preconditions`, `infer_state`, `legal_actions`);
-- `execute()` gates, in order: action exists, `allowed_from_states`, `requires_confirmation`, preconditions, host guard, abstention lands on a declared fallback, handler exists;
+- `execute()` gates, in order: action exists, `allowed_from_states`, `requires_confirmation`, preconditions, host guard, abstention lands on a declared fallback (or was escalated, and then never onto an action with `requires_confirmation`), handler exists;
+- `decide(..., escalate=fn)` / `run(..., escalate=fn)`: an abstained decision goes to `fn(context, decision, legal)`, which sees only the question's non-fallback actions legal from the state and returns one of them or `None` (keep the fallback); the result carries `decided_by: escalation`;
 - `DecisionLog` and `decision_record()`: one JSONL record per decision or execution attempt;
 - generated handlers, one function per action, and the `HANDLERS` table.
 
@@ -68,7 +69,7 @@ prints the metrics per model on the same log so the accuracy cost of going local
 
 ## Decision log record
 
-`timestamp, system_id, question_id, surface_id, case_id, state_id, selected_choice, proposed_action_id` (before policy), `action_id` (after policy), `confidence, probabilities, threshold, abstained, reason, legal_actions, executed, outcome (ok|blocked|error|null), blocked_reason, result_summary, handler_status, model, latency_ms, usage, ground_truth_action_id, label_source`. `calibrate_thresholds.py` and `evaluate_decisions.py` read this file; labels may be inline (`ground_truth_action_id`) or in a separate JSONL/CSV keyed by `case_id, question_id`.
+`timestamp, system_id, question_id, surface_id, case_id, state_id, selected_choice, proposed_action_id` (before policy), `action_id` (after policy), `confidence, probabilities, threshold, abstained, decided_by (jev|fallback|escalation), reason, legal_actions, executed, outcome (ok|blocked|error|null), blocked_reason, result_summary, handler_status, model, latency_ms, usage, ground_truth_action_id, label_source`. `calibrate_thresholds.py` and `evaluate_decisions.py` read this file; labels may be inline (`ground_truth_action_id`) or in a separate JSONL/CSV keyed by `case_id, question_id`, with an optional `label_source` (missing means `human`).
 
 ## Question shapes
 

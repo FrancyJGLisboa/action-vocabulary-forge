@@ -19,7 +19,8 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from decision_history import (  # noqa: E402
-    attach_labels, calibration_bins, load_questions, question_fallbacks, read_labels, read_log, split_cases, suggest_threshold,
+    attach_labels, calibration_bins, label_source_counts, load_questions, question_fallbacks, read_labels, read_log, split_cases,
+    suggest_threshold,
 )
 
 
@@ -110,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     records = read_log(args.log)
-    labeled, dropped = attach_labels(records, read_labels(args.labels))
+    labeled, dropped = attach_labels(records, read_labels(args.labels, with_source=True))
     train, heldout = split_cases(labeled, args.heldout_fraction, args.seed)
     if not train:
         print("no history: policy stays uncalibrated; every non-fallback action abstains until calibrated")
@@ -119,6 +120,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"wrote policy.default_when_uncalibrated: abstain to {args.bundle / 'jev_adapter_spec.yaml'}")
         return 0
     print(f"records={len(records)} labeled={len(labeled)} dropped_unlabeled={dropped} train={len(train)} heldout={len(heldout)}")
+    print(f"train label sources: {label_source_counts(train)} (the release gate judges human labels only)")
     policy, rows = calibrate(args.bundle, train, min_accuracy=args.min_accuracy, min_samples=args.min_samples,
                              min_threshold=args.min_threshold)
     print_table(rows)

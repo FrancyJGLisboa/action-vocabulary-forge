@@ -83,6 +83,9 @@ Calibration writes per-question and per-action thresholds into
 abstain. The evaluator prints the references/evaluation.md metrics on the
 held-out split and a `RELEASE GATE: APPROVE | HOLD` line. The human's remaining
 role is to grant credentials, answer the release gate, and resolve abstentions.
+Abstentions on reversible actions can go to a second decider first
+(`run(..., escalate=fn)`, logged as `decided_by: escalation`); the gate still
+judges human labels only (`label_source`), so that decider never grades itself.
 
 When TypeSafe credentials are available, run the compiled surface through JEV:
 

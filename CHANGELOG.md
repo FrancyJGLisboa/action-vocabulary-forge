@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Escalation cascade: `decide()` / `run()` take `escalate=callable(context, decision, legal) -> action_id | None`. An abstained decision goes to the second decider (an LLM, a rule) before the fallback runs. It is offered only the question's non-fallback actions legal from the current state; `None` keeps the fallback; anything else raises `IllegalChoice`. Dynamic-candidate questions are not escalated.
+- `Decision.decided_by` and the log field `decided_by`: `jev | fallback | escalation`. An escalated decision keeps `abstained: true` (JEV did abstain) and still passes every execution check; an escalated action with `requires_confirmation` is always blocked, even with `confirmed=True`.
+- `label_source` on labels (JSONL/CSV column or inline in the log; missing means `human`). `evaluate_decisions.py` judges the release gate on human labels only and prints `excluded_machine_labeled`: an LLM that labels and escalates would otherwise grade itself. Calibration accepts every source and prints the counts.
+- Evaluation: escalated records count as decisions in boundary accuracy, an escalation that acted where the truth was a fallback fails abstention accuracy, and a new `escalation_accuracy` line reports the second decider alone.
+
 ## 0.4.0 (2026-09-22)
 
 - A Noul's `no_action_id` is a free fallback only when the question declares no `abstention_action_id`. With one declared, "no" is a conclusion and must clear its threshold: a control test that can record an exception ungated is not a control test.

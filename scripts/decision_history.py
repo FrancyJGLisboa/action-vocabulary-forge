@@ -12,6 +12,10 @@ import yaml
 
 CALIBRATION_EDGES = (0.0, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
 LABEL_FIELDS = ("case_id", "question_id", "ground_truth_action_id")
+# Only these label sources may judge the release gate. A label with no source counts as human,
+# so label files written before label_source existed keep working; a machine labeler must say so.
+HUMAN_LABEL_SOURCES = {"human"}
+DEFAULT_LABEL_SOURCE = "human"
 
 
 def read_log(path: Path | str) -> list[dict[str, Any]]:
@@ -31,8 +35,11 @@ def read_log(path: Path | str) -> list[dict[str, Any]]:
     return records
 
 
-def read_labels(path: Path | str | None) -> dict[tuple[str, str], str]:
-    """JSONL or CSV with case_id, question_id, ground_truth_action_id."""
+def read_labels(path: Path | str | None, *, with_source: bool = False) -> dict[tuple[str, str], Any]:
+    """JSONL or CSV with case_id, question_id, ground_truth_action_id and optional label_source.
+
+    With ``with_source`` each value is ``(ground_truth_action_id, label_source)``.
+    """
     if path is None:
         return {}
     path = Path(path)
@@ -48,23 +55,44 @@ def read_labels(path: Path | str | None) -> dict[tuple[str, str], str]:
     for row in rows:
         if not all(row.get(field) for field in LABEL_FIELDS):
             raise SystemExit(f"labels: every row needs {LABEL_FIELDS}")
-        labels[(str(row["case_id"]), str(row["question_id"]))] = str(row["ground_truth_action_id"])
+        truth = str(row["ground_truth_action_id"])
+        source = str(row.get("label_source") or DEFAULT_LABEL_SOURCE)
+        labels[(str(row["case_id"]), str(row["question_id"]))] = (truth, source) if with_source else truth
     return labels
 
 
-def attach_labels(records: list[dict[str, Any]], labels: Mapping[tuple[str, str], str]) -> tuple[list[dict[str, Any]], int]:
-    """Inline ground_truth_action_id wins; unlabeled records are dropped and counted."""
+def attach_labels(records: list[dict[str, Any]], labels: Mapping[tuple[str, str], Any]) -> tuple[list[dict[str, Any]], int]:
+    """Inline ground_truth_action_id wins; unlabeled records are dropped and counted.
+
+    Every labeled record gets a ``label_source`` (inline, from the labels file, or the default).
+    """
     labeled = []
     dropped = 0
     for record in records:
         truth = record.get("ground_truth_action_id")
+        source = record.get("label_source")
         if not truth:
-            truth = labels.get((str(record.get("case_id")), str(record.get("question_id"))))
+            found = labels.get((str(record.get("case_id")), str(record.get("question_id"))))
+            truth, source = found if isinstance(found, tuple) else (found, None)
         if not truth:
             dropped += 1
             continue
-        labeled.append({**record, "ground_truth_action_id": truth})
+        labeled.append({**record, "ground_truth_action_id": truth, "label_source": source or DEFAULT_LABEL_SOURCE})
     return labeled, dropped
+
+
+def human_labeled(records: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
+    """The records a release gate may judge, and how many were set aside as machine-labeled."""
+    kept = [r for r in records if r.get("label_source", DEFAULT_LABEL_SOURCE) in HUMAN_LABEL_SOURCES]
+    return kept, len(records) - len(kept)
+
+
+def label_source_counts(records: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for record in records:
+        source = str(record.get("label_source", DEFAULT_LABEL_SOURCE))
+        counts[source] = counts.get(source, 0) + 1
+    return counts
 
 
 def split_cases(records: list[dict[str, Any]], heldout_fraction: float, seed: int) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:

@@ -19,8 +19,8 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from decision_history import (  # noqa: E402
-    attach_labels, calibration_bins, is_deterministic, load_questions, question_executors, question_fallbacks, read_labels, read_log,
-    split_cases,
+    attach_labels, calibration_bins, human_labeled, is_deterministic, load_questions, question_executors, question_fallbacks,
+    read_labels, read_log, split_cases,
 )
 from validate_action_bundle import PRODUCTION_GRADES, validate  # noqa: E402
 
@@ -69,10 +69,15 @@ def log_metrics(records: list[dict[str, Any]], questions: dict[str, dict[str, An
     fallbacks = {qid: question_fallbacks(q) for qid, q in questions.items()}
     truths = {r["ground_truth_action_id"] for r in records}
     recall = ratio(len(truths & registry_actions), len(truths))
-    decided = [r for r in records if not r.get("abstained")]
+    # An escalated record abstained at JEV but executed a concluding action, so it is judged as a decision.
+    escalated = [r for r in records if r.get("decided_by") == "escalation"]
+    decided = [r for r in records if not r.get("abstained") or r.get("decided_by") == "escalation"]
     boundary = ratio(sum(1 for r in decided if r.get("action_id") == r["ground_truth_action_id"]), len(decided))
     need_abstain = [r for r in records if r["ground_truth_action_id"] in fallbacks.get(r.get("question_id"), set())]
-    abstained_ok = sum(1 for r in need_abstain if r.get("abstained") or r.get("action_id") in fallbacks.get(r.get("question_id"), set()))
+    abstained_ok = sum(
+        1 for r in need_abstain
+        if (r.get("abstained") and r.get("decided_by") != "escalation") or r.get("action_id") in fallbacks.get(r.get("question_id"), set())
+    )
     abstention = ratio(abstained_ok, len(need_abstain))
     illegal = [
         r for r in records
@@ -90,6 +95,7 @@ def log_metrics(records: list[dict[str, Any]], questions: dict[str, dict[str, An
         "illegal_action_rate": ratio(len(illegal), len(records)),
         "illegal_records": [r.get("case_id") for r in illegal],
         "jev_accuracy": jev,
+        "escalation_accuracy": ratio(sum(1 for r in escalated if r.get("action_id") == r["ground_truth_action_id"]), len(escalated)),
         "latency_ms": {
             "mean": statistics.fmean(latencies) if latencies else None,
             "p95": (sorted(latencies)[max(0, int(round(0.95 * len(latencies))) - 1)] if latencies else None),
@@ -155,15 +161,17 @@ def main(argv: list[str] | None = None) -> int:
 
     spec, questions = load_questions(args.bundle)
     records = read_log(args.log)
-    labeled, dropped = attach_labels(records, read_labels(args.labels))
+    labeled, dropped = attach_labels(records, read_labels(args.labels, with_source=True))
     if args.all:
         evaluated = labeled
     else:
         _, evaluated = split_cases(labeled, args.heldout_fraction, args.seed)
+    # The gate never grades against machine labels: an LLM that labels and escalates would grade itself.
+    evaluated, machine_labeled = human_labeled(evaluated)
     static = static_metrics(args.bundle)
     metrics = log_metrics(evaluated, questions, static["registry_actions"]) if evaluated else {
         "action_recall": ratio(0, 0), "boundary_accuracy": ratio(0, 0), "abstention_accuracy": ratio(0, 0),
-        "illegal_action_rate": ratio(0, 0), "illegal_records": [], "jev_accuracy": ratio(0, 0),
+        "illegal_action_rate": ratio(0, 0), "illegal_records": [], "jev_accuracy": ratio(0, 0), "escalation_accuracy": ratio(0, 0),
         "latency_ms": {"mean": None, "p95": None}, "usage": None, "calibration": {},
     }
     metrics.update({k: static[k] for k in ("action_precision", "surface_coverage", "replacement_rate")})
@@ -175,8 +183,8 @@ def main(argv: list[str] | None = None) -> int:
     deterministic = [r for r in evaluated if is_deterministic(r)]
     det_agree = sum(1 for r in deterministic if r.get("action_id") == r.get("ground_truth_action_id"))
     metrics["deterministic"] = ratio(det_agree, len(deterministic))
-    print(f"system: {spec.get('system_id')}  records={len(records)} labeled={len(labeled)} dropped_unlabeled={dropped} evaluated={len(evaluated)}")
-    for key in ("action_recall", "action_precision", "surface_coverage", "boundary_accuracy", "abstention_accuracy", "illegal_action_rate", "jev_accuracy", "replacement_rate"):
+    print(f"system: {spec.get('system_id')}  records={len(records)} labeled={len(labeled)} dropped_unlabeled={dropped} excluded_machine_labeled={machine_labeled} evaluated={len(evaluated)}")
+    for key in ("action_recall", "action_precision", "surface_coverage", "boundary_accuracy", "abstention_accuracy", "illegal_action_rate", "jev_accuracy", "escalation_accuracy", "replacement_rate"):
         print(f"  {key:22} {fmt(metrics[key])}")
     lat = metrics["latency_ms"]
     mean_ms = "n/a" if lat["mean"] is None else format(lat["mean"], ".1f")

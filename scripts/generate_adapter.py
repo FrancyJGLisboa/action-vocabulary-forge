@@ -297,6 +297,7 @@ class Decision:
     latency_ms: float | None = None
     usage: Mapping[str, Any] | None = None
     case_id: str | None = None
+    decided_by: str = "jev"
 
 
 # --- state and preconditions -------------------------------------------------
@@ -525,11 +526,12 @@ def apply_policy(decision: Decision, *, min_confidence: float | None = None) -> 
     """Route low-confidence or uncalibrated results to the declared abstention action."""
     proposed = decision.proposed_action_id or decision.action_id
     threshold = float(min_confidence) if min_confidence is not None else threshold_for(decision.question_id, decision.action_id)
+    decided_by = "fallback" if decision.abstained else "jev"
     if threshold is None:
-        return replace(decision, proposed_action_id=proposed, threshold=None)
+        return replace(decision, proposed_action_id=proposed, threshold=None, decided_by=decided_by)
     confidence = decision.confidence if decision.confidence is not None else 0.0
     if threshold != UNCALIBRATED and confidence >= threshold:
-        return replace(decision, proposed_action_id=proposed, threshold=threshold)
+        return replace(decision, proposed_action_id=proposed, threshold=threshold, decided_by=decided_by)
     question = QUESTIONS[decision.question_id]
     fallback = _fallback_action(question)
     if not fallback:
@@ -542,7 +544,49 @@ def apply_policy(decision: Decision, *, min_confidence: float | None = None) -> 
         reason=reason,
         proposed_action_id=proposed,
         threshold=None if threshold == UNCALIBRATED else threshold,
+        decided_by="fallback",
     )
+
+
+def question_actions(question_id: str) -> set[str]:
+    """The executor actions a question can conclude with (dynamic candidates excluded)."""
+    question = QUESTIONS[question_id]
+    kind = question.get("type", "choice")
+    if kind == "choice":
+        values = {item.get("executor_action_id") for item in question.get("choices", [])}
+    elif kind == "noul":
+        values = {question.get("yes_action_id"), question.get("no_action_id")}
+    else:
+        values = {level.get("executor_action_id") for level in question.get("levels", [])}
+    values.add(question.get("abstention_action_id"))
+    return {value for value in values if value}
+
+
+Escalate = Callable[[Any, Decision, list], "str | None"]
+
+
+def escalate_abstention(decision: Decision, context: Any, state: Mapping[str, Any], escalate: Escalate) -> Decision:
+    """Give an abstained decision to a second decider (an LLM, a rule) before the fallback runs.
+
+    The second decider sees only the question's non-fallback actions that are legal from
+    ``state``, and may return one of them or None to keep the fallback. Anything else is
+    refused. Dynamic-candidate questions are not escalated: an action id cannot name a candidate.
+    """
+    question = QUESTIONS[decision.question_id]
+    reason = decision.reason or "abstained"
+    if question.get("criteria_source", "static") == "dynamic":
+        return replace(decision, reason=f"{reason}|escalation_skipped:dynamic")
+    fallbacks = question_fallbacks(decision.question_id)
+    allowed = question_actions(decision.question_id) - fallbacks
+    legal = [action_id for action_id in legal_actions(state) if action_id in allowed]
+    if not legal:
+        return replace(decision, reason=f"{reason}|escalation_skipped:no_legal_action")
+    chosen = escalate(context, decision, legal)
+    if chosen is None or chosen in fallbacks:
+        return replace(decision, reason=f"{reason}|escalation_kept_fallback")
+    if chosen not in legal:
+        raise IllegalChoice(f"escalation returned illegal action {chosen!r} for {decision.question_id}")
+    return replace(decision, action_id=chosen, decided_by="escalation", reason=f"{reason}|escalated")
 
 
 # --- decision log ------------------------------------------------------------------
@@ -594,6 +638,7 @@ def decision_record(
         "probabilities": dict(decision.probabilities),
         "threshold": decision.threshold,
         "abstained": decision.abstained,
+        "decided_by": decision.decided_by,
         "reason": decision.reason,
         "legal_actions": legal_actions(state),
         "executed": executed,
@@ -924,7 +969,10 @@ def execute(
             record["reason"] = (record["reason"] or "") + "|preconditions_skipped"
         if guard is not None and not guard(decision.action_id, state):
             raise ExecutionBlocked(f"deterministic guard rejected {decision.action_id}")
-        if decision.abstained and decision.action_id not in question_fallbacks(decision.question_id):
+        if decision.decided_by == "escalation":
+            if action.get("requires_confirmation"):
+                raise ExecutionBlocked(f"escalated decision cannot execute {decision.action_id}: it requires confirmation")
+        elif decision.abstained and decision.action_id not in question_fallbacks(decision.question_id):
             raise ExecutionBlocked("abstained decision is not a declared fallback")
         handler = table.get(decision.action_id)
         if handler is None:
@@ -1022,9 +1070,12 @@ def decide(
     transport: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     endpoint: str | None = None,
     api_key: str | None = None,
+    escalate: Escalate | None = None,
 ) -> Decision:
-    """classify + policy; logs the decision without executing it."""
+    """classify + policy (+ escalation of abstentions); logs the decision without executing it."""
     decision = classify(context, question_id=question_id, dynamic_choices=dynamic_choices, endpoint=endpoint, api_key=api_key, transport=transport)
+    if escalate is not None and decision.abstained:
+        decision = escalate_abstention(decision, context, state, escalate)
     if case_id:
         decision = replace(decision, case_id=case_id)
     if log is not None:
@@ -1046,9 +1097,10 @@ def run(
     transport: Callable[[dict[str, Any]], dict[str, Any]] | None = None,
     endpoint: str | None = None,
     api_key: str | None = None,
+    escalate: Escalate | None = None,
 ) -> tuple[Decision, Any]:
     """decide + execute with exactly one log record."""
-    decision = decide(context, state, question_id=question_id, dynamic_choices=dynamic_choices, case_id=case_id, log=None, transport=transport, endpoint=endpoint, api_key=api_key)
+    decision = decide(context, state, question_id=question_id, dynamic_choices=dynamic_choices, case_id=case_id, log=None, transport=transport, endpoint=endpoint, api_key=api_key, escalate=escalate)
     result = execute(decision, state, handlers=handlers, guard=guard, confirmed=confirmed, log=log, case_id=case_id)
     return decision, result
 
@@ -1058,6 +1110,7 @@ __all__ = [
     "AdapterError", "IllegalChoice", "ExecutionBlocked", "HandlerError", "HandlerUnavailable", "PredicateError",
     "apply_policy", "build_payload", "check_preconditions", "classify", "decide", "decision_record", "default_log",
     "execute", "infer_state", "legal_actions", "parse_response", "question_fallbacks", "run", "threshold_for",
+    "escalate_abstention", "question_actions",
     "set_ui_page", "set_mcp_caller", "default_transport", "laya_transport", "PROVIDER", "use_compact",
 ]
 '''

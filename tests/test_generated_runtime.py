@@ -73,7 +73,7 @@ class DecisionLogTests(unittest.TestCase):
         for record in lines:
             for field in (
                 "timestamp", "system_id", "question_id", "surface_id", "case_id", "state_id", "selected_choice",
-                "proposed_action_id", "action_id", "confidence", "probabilities", "threshold", "abstained", "reason",
+                "proposed_action_id", "action_id", "confidence", "probabilities", "threshold", "abstained", "decided_by", "reason",
                 "legal_actions", "executed", "outcome", "blocked_reason", "result_summary", "handler_status", "model",
                 "latency_ms", "usage", "ground_truth_action_id", "label_source",
             ):
@@ -500,6 +500,67 @@ class DynamicCriteriaTests(unittest.TestCase):
         record = json.loads(lines[0])
         self.assertEqual((record["case_id"], record["selected_choice"], record["executed"]), ("c9", "cand_7", True))
         self.assertIsNotNone(decision.latency_ms)
+
+
+class EscalationTests(unittest.TestCase):
+    """An abstained decision can go to a second decider before the fallback runs."""
+
+    def setUp(self):
+        self.m = import_bundle(load_example())  # policy.min_confidence 0.85
+
+    def transport(self, confidence):
+        return lambda payload: choice_response(Q, "retry", confidence)
+
+    def test_escalation_picks_a_legal_action_and_executes_it(self):
+        m = self.m
+        seen = []
+
+        def escalate(context, decision, legal):
+            seen.append((context, decision.proposed_action_id, legal))
+            return "retry"
+
+        with tempfile.TemporaryDirectory() as directory:
+            log = m.DecisionLog(Path(directory) / "log.jsonl")
+            decision, result = m.run({"row": 1}, GOOD_STATE, log=log, transport=self.transport(0.5),
+                                     handlers={"retry": lambda s: "ran"}, escalate=escalate)
+            record = json.loads(Path(log.path).read_text().splitlines()[0])
+        self.assertEqual(seen, [({"row": 1}, "retry", ["retry"])])  # fallbacks are never offered
+        self.assertEqual(result, "ran")
+        self.assertEqual((decision.action_id, decision.abstained, decision.decided_by), ("retry", True, "escalation"))
+        self.assertEqual(record["decided_by"], "escalation")
+        self.assertEqual(record["reason"], "confidence_below_threshold:0.85|escalated")
+
+    def test_none_keeps_the_fallback(self):
+        decision = self.m.decide({}, GOOD_STATE, transport=self.transport(0.5), escalate=lambda c, d, legal: None)
+        self.assertEqual((decision.action_id, decision.decided_by), ("human_review", "fallback"))
+        self.assertTrue(decision.reason.endswith("|escalation_kept_fallback"))
+
+    def test_an_illegal_escalation_is_refused(self):
+        with self.assertRaises(self.m.IllegalChoice):
+            self.m.decide({}, GOOD_STATE, transport=self.transport(0.5), escalate=lambda c, d, legal: "delete_everything")
+
+    def test_no_legal_action_skips_the_escalation(self):
+        calls = []
+        state = {**GOOD_STATE, "retry_budget": 0}
+        decision = self.m.decide({}, state, transport=self.transport(0.5), escalate=lambda c, d, legal: calls.append(1))
+        self.assertEqual(calls, [])
+        self.assertEqual((decision.action_id, decision.decided_by), ("human_review", "fallback"))
+        self.assertTrue(decision.reason.endswith("|escalation_skipped:no_legal_action"))
+
+    def test_a_confident_decision_is_not_escalated(self):
+        calls = []
+        decision = self.m.decide({}, GOOD_STATE, transport=self.transport(0.95), escalate=lambda c, d, legal: calls.append(1))
+        self.assertEqual(calls, [])
+        self.assertEqual((decision.action_id, decision.decided_by), ("retry", "jev"))
+
+    def test_an_escalated_action_never_passes_a_confirmation_gate(self):
+        bundle = load_example()
+        bundle["actions"]["retry"]["requires_confirmation"] = True
+        m = import_bundle(bundle)
+        with self.assertRaises(m.ExecutionBlocked) as ctx:
+            m.run({}, GOOD_STATE, transport=self.transport(0.5), handlers={"retry": lambda s: "ran"},
+                  confirmed=True, escalate=lambda c, d, legal: "retry")
+        self.assertIn("requires confirmation", str(ctx.exception))
 
 
 class ExampleLockstepTests(unittest.TestCase):

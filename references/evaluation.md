@@ -41,7 +41,7 @@ Record failures in coverage_report.md and keep the surface out of production unt
 
 ## Decision log
 
-The generated adapter writes one JSONL record per decision or execution attempt (`DecisionLog`, or set `FORGE_DECISION_LOG`). Fields: `timestamp, system_id, question_id, surface_id, case_id, state_id, selected_choice, proposed_action_id` (before policy), `action_id` (after policy), `confidence, probabilities, threshold, abstained, reason, legal_actions, executed, outcome, blocked_reason, result_summary, handler_status, model, latency_ms, usage, ground_truth_action_id, label_source`. Labels can be written inline as `ground_truth_action_id` or supplied separately as JSONL/CSV rows with `case_id, question_id, ground_truth_action_id`.
+The generated adapter writes one JSONL record per decision or execution attempt (`DecisionLog`, or set `FORGE_DECISION_LOG`). Fields: `timestamp, system_id, question_id, surface_id, case_id, state_id, selected_choice, proposed_action_id` (before policy), `action_id` (after policy), `confidence, probabilities, threshold, abstained, decided_by, reason, legal_actions, executed, outcome, blocked_reason, result_summary, handler_status, model, latency_ms, usage, ground_truth_action_id, label_source`. Labels can be written inline as `ground_truth_action_id` or supplied separately as JSONL/CSV rows with `case_id, question_id, ground_truth_action_id` and an optional `label_source`. A label without a source counts as `human`; a machine labeler must write its own source (e.g. `llm`). Calibration uses every source; the release gate is judged on `human` labels only, and machine-labeled held-out records are counted as `excluded_machine_labeled`.
 
 ## Calibration
 
@@ -60,10 +60,11 @@ Log metrics use the held-out split (`--all` evaluates everything):
 | Action recall | distinct ground-truth actions present in the registry / distinct ground-truth actions |
 | Action precision (bundle) | actions with production-grade evidence / all actions |
 | Surface coverage (bundle) | promoted bounded candidates backed by a production surface with a question / bounded candidates |
-| Boundary accuracy | non-abstained records with `action_id == ground_truth` / non-abstained records |
-| Abstention accuracy | records whose truth is a fallback and that abstained or landed on a fallback / records whose truth is a fallback |
+| Boundary accuracy | non-abstained or escalated records with `action_id == ground_truth` / those records |
+| Abstention accuracy | records whose truth is a fallback and that abstained without escalation or landed on a fallback / records whose truth is a fallback |
 | Illegal-action rate | records whose `proposed_action_id` was not in `legal_actions`, or blocked by state/precondition / all records |
 | JEV accuracy | `proposed_action_id == ground_truth` / all records |
+| Escalation accuracy | escalated records with `action_id == ground_truth` / escalated records |
 | Replacement rate (bundle) | promoted `generative_call` candidates / `generative_call` candidates |
 | Cost and latency | mean and p95 `latency_ms`; summed `usage` tokens |
 
