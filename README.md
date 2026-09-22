@@ -30,14 +30,40 @@ actions and their criteria, choose one"). Code decides what is legal, applies
 thresholds and abstention, re-checks preconditions, and executes through a
 handler that was generated from an observed binding, never from a guess.
 
+## The mental model
+
+Two analogies get you most of the way, and it is worth knowing what each one leaves out.
+
+**A scoped action graph for a classifier.** A state machine where each state carries the small
+set of actions legal from there, and the model is only ever asked to pick within that set. The
+"scoped" part is load-bearing: a decision surface is local to one state, never a global menu.
+
+**An action space with verifiable preconditions**, if you come from reinforcement learning — but
+the policy is not learned. It is calibrated from your own labelled decisions, and abstention is a
+first-class outcome rather than one action among many.
+
+What both metaphors miss is what makes it usable: every node and edge carries its **provenance**
+(where it was observed, at what evidence grade, refused by the validator if only inferred); every
+action carries a **binding**, so the graph knows how to execute itself, and only when the
+invocation was actually observed; and a **policy layer** sits over the graph with calibrated
+thresholds, a mandatory abstention path, and a release gate a human answers.
+
+A scoped action graph, plus provenance, plus executability, plus a gate.
+
 ## Status
 
-v0.3. One real system wired end to end (a question-routing surface in an internal
+v0.4. One real system wired end to end (a question-routing surface in an internal
 ag-commodity tool: 5 generated handlers, JEV 53/54 vs 33/54 for the keyword
-resolver it replaced, release gate approved). `python_callable`, `http` and `cli`
-handlers have run for real; `ui` (Playwright) and `mcp` (MCP SDK) renderers are
-unit-tested at the SDK boundary but not yet exercised against a live browser or
-server. Runs against TypeSafe JEV or a self-hosted Laya checkpoint (`provider: laya`); the bundle, thresholds and gate do not change. Expect the bundle schema to move; the validator is the contract.
+resolver it replaced, release gate approved). A second system (an internal-control test) ran 110 labelled decisions through
+both a hosted and a fully local classifier: 97.3% and 93.6% raw agreement,
+**zero wrong conclusions after thresholds on either**, with the local one
+concluding 62 decisions where the hosted one concluded 105.
+
+`python_callable`, `http` and `cli` handlers have run for real; `ui` (Playwright)
+and `mcp` (MCP SDK) renderers are unit-tested at the SDK boundary but not yet
+exercised against a live browser or server. Runs against TypeSafe JEV or a
+self-hosted Laya checkpoint (`provider: laya`); the bundle, thresholds and gate do
+not change. Expect the bundle schema to move; the validator is the contract.
 
 ## Install as a skill
 
