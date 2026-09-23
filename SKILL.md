@@ -70,6 +70,40 @@ adapter files.
 
 ## Workflow
 
+### 0. Discover and rank decision surfaces from resolved work
+
+When the user has source material and resolved cases but has not named the
+decision surface, start with the offline discovery compiler:
+
+```bash
+python3 scripts/discover_decision_system.py \
+  --source ./src --source ./SOPs \
+  --cases ./resolved-cases.jsonl \
+  --surface-field decision_type \
+  --system-id company_workflow \
+  --output ./forge-discovery
+```
+
+Read [references/decision-discovery.md](references/decision-discovery.md) for the
+case contract, ranking formula, privacy behavior, and promotion gates. Inspect
+`decision_candidates.yaml` and `discovery_report.md`, then review the generated
+`candidate_bundle/` with the domain owner.
+
+The local holdout classifier is a discovery baseline, not JEV performance. The
+candidate bundle is deliberately non-production, contains no invented bindings,
+and requires human approval for non-fallback actions. If evidence is weak or the
+actions are unbounded, no bundle is generated.
+
+After that review, measure the real candidate Choice in shadow mode:
+
+```bash
+python3 scripts/evaluate_discovered_system.py ./forge-discovery
+```
+
+The evaluator refuses a changed source file and illegal model answers, executes
+no action, and emits a `jev_gate.py`-compatible log. Historical labels are not
+release evidence unless a responsible human explicitly verifies them.
+
 ### 1. Scope the decision outcome and inventory material
 
 Start from behavior the resulting software should select, change, show, or hand

@@ -1,4 +1,4 @@
 interface:
   display_name: "Semantic Decision Forge"
   short_description: "Compile evidence into JEV decision systems"
-  default_prompt: "Use $action-vocabulary-forge to compile this material into evidence-backed JEV judgments, legal action surfaces, and an evaluated runtime."
+  default_prompt: "Use $action-vocabulary-forge to discover valuable bounded decisions from this material and resolved work, then compile the safest evidence-backed candidate into JEV judgments, legal actions, and an evaluated runtime."

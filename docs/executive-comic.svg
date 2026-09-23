@@ -82,7 +82,7 @@
     <text x="24" y="39" class="panel-title">2. WHAT FORGE COMPILES</text>
     <rect x="28" y="85" width="116" height="82" class="chip-blue"/>
     <text x="45" y="118" class="body-sm strong">SOURCE</text>
-    <text x="50" y="147" class="body-xs">material</text>
+    <text x="39" y="147" class="body-xs">cases + docs</text>
     <path d="M148 126 H191" class="flow-thin"/>
     <rect x="198" y="85" width="145" height="82" class="chip"/>
     <text x="214" y="118" class="body-sm strong">SEMANTIC</text>
@@ -92,9 +92,9 @@
     <text x="415" y="118" class="body-sm strong">RUNTIME</text>
     <text x="419" y="147" class="body-xs">+ evidence</text>
     <text x="37" y="216" class="body strong accent-text">A compiler of bounded decisions.</text>
-    <text x="37" y="258" class="body-sm">It extracts concepts and relations, then</text>
-    <text x="37" y="288" class="body-sm">defines reusable Choice, Noul, and Score</text>
-    <text x="37" y="318" class="body-sm">judgments linked to evidence.</text>
+    <text x="37" y="258" class="body-sm">It ranks bounded surfaces from resolved cases,</text>
+    <text x="37" y="288" class="body-sm">then defines reusable Choice, Noul, and Score</text>
+    <text x="37" y="318" class="body-sm">judgments linked to source evidence.</text>
     <line x1="37" y1="341" x2="513" y2="341" class="rule"/>
     <text x="37" y="378" class="body-sm">It compiles small decision surfaces where</text>
     <text x="37" y="408" class="body-sm">deterministic code filters legal actions</text>
@@ -108,7 +108,7 @@
     <circle cx="75" cy="116" r="28" fill="#25bea9"/>
     <text x="66" y="126" class="body strong" fill="#fff">1</text>
     <text x="120" y="108" class="body-sm strong">A searchable decision vocabulary</text>
-    <text x="120" y="137" class="body-xs muted">Questions, concepts, evidence, boundaries</text>
+    <text x="120" y="137" class="body-xs muted">Ranked candidates, questions, evidence, boundaries</text>
     <circle cx="75" cy="204" r="28" fill="#3b9ed0"/>
     <text x="66" y="214" class="body strong" fill="#fff">2</text>
     <text x="120" y="196" class="body-sm strong">An executable guarded workflow</text>
@@ -127,8 +127,8 @@
     <rect class="panel" width="550" height="535"/>
     <rect class="bar" width="550" height="58" rx="17"/>
     <text x="24" y="39" class="panel-title">4. FOUR ROLES, KEPT SEPARATE</text>
-    <text x="34" y="101" class="body-sm strong accent-text">FRONTIER AGENT · compile time</text>
-    <text x="34" y="130" class="body-xs">Inspects material, proposes the vocabulary, cites evidence.</text>
+    <text x="34" y="101" class="body-sm strong accent-text">DISCOVERY + FRONTIER AGENT · compile time</text>
+    <text x="34" y="130" class="body-xs">Ranks resolved work, inspects material, proposes the vocabulary.</text>
     <line x1="34" y1="153" x2="516" y2="153" class="rule"/>
     <text x="34" y="192" class="body-sm strong accent-text">JEV · runtime</text>
     <text x="34" y="221" class="body-xs">Answers typed semantic questions and chooses among legal options.</text>

@@ -14,6 +14,12 @@ decision surfaces, and a generated adapter that lets TypeSafe's JEV decide
 inside deterministic guard rails. The original eight-file **Action Bundle**
 remains supported for focused decision-point audits.
 
+If the decision point is not known yet, give Forge resolved cases plus the
+repository or operating material. The offline discovery compiler profiles the
+case history, ranks bounded surfaces by evidence readiness and optional workload
+value, measures a disjoint local baseline, and scaffolds the safest candidate.
+It never promotes historical behavior into production authority.
+
 ```text
 material
   -> discovery writes a manifest, semantic IR, judgment registry and evidence
@@ -34,6 +40,34 @@ Code decides legality, applies thresholds and abstention, re-checks precondition
 and executes through a handler generated from an observed binding, never a guess.
 
 ## Semantic compiler
+
+Start from company material and resolved cases:
+
+```bash
+python3 scripts/discover_decision_system.py \
+  --source examples/discovery-input/sop.md \
+  --cases examples/discovery-input/cases.jsonl \
+  --surface-field decision_type \
+  --system-id shipment_triage \
+  --review-minutes 2 --hourly-cost 45 --monthly-volume 3000 \
+  --output /tmp/forge-discovery
+```
+
+This writes a source manifest, ranked candidates, privacy-safe train/holdout
+references, a measured offline baseline, and a validator-clean but non-production
+`candidate_bundle/`. See [decision discovery](references/decision-discovery.md).
+
+After reviewing that vocabulary, measure the actual candidate Choice without
+executing anything:
+
+```bash
+TYPESAFE_API_KEY=... python3 scripts/evaluate_discovered_system.py /tmp/forge-discovery
+```
+
+The evaluator reloads the unchanged original cases, uses only the frozen
+holdout, rejects illegal answers, and writes a privacy-safe `jev_gate.py` log.
+
+Continue with a reviewed bundle:
 
 ```bash
 python3 scripts/init_semantic_bundle.py ./semantic-bundle --example
@@ -103,12 +137,15 @@ Long-form explainer for people and agents: [docs/what-the-forge-is.md](docs/what
 ```text
 SKILL.md                     material -> judgments -> legal actions -> evaluated runtime
 references/semantic-decision-schema.md   semantic manifest, IR, judgments, links and runtime plan
+references/decision-discovery.md   resolved-case contract, ranking, baseline and promotion path
 references/bundle-schema.md  every bundle field, including binding, policy, criteria_source, predicates
 references/adapter-generation.md   what the generated module contains and how a host uses it
 references/evaluation.md     metrics, calibration rule, release gate
 references/source-playbook.md   mixed-source discovery guidance
 scripts/init_action_bundle.py       scaffold an empty or example bundle
 scripts/init_semantic_bundle.py     semantic front end plus the compatible Action Bundle
+scripts/discover_decision_system.py material + resolved cases -> ranked candidates + safe bundle
+scripts/evaluate_discovered_system.py candidate Choice -> measured shadow holdout, no execution
 scripts/scan_llm_opportunities.py   heuristic scan for classifier-replaceable generative calls
 scripts/validate_action_bundle.py   structural and safety checks
 scripts/validate_semantic_bundle.py semantic provenance, judgment and cross-link checks
@@ -123,6 +160,7 @@ scripts/jev_gate.py                 calibrate + release gate for any JEV decisio
 scripts/decision_history.py         shared core: labels, split, calibration, metrics, gate checks
 examples/validation-bundle/         the reference bundle used by the tests
 examples/semantic-validation-bundle/ full material-to-runtime reference bundle
+examples/discovery-input/           representative SOP and resolved-case history
 tests/                              unit tests per feature plus test_end_to_end.py
 ```
 

@@ -54,7 +54,40 @@ screens/DOM, SOPs, documents, datasets, schemas, logs, traces, historical decisi
 The compiler records the authority of each source. Material without operational authority can
 produce candidates but cannot silently become policy or executable behavior.
 
+When the user does not yet know the decision surface, `discover_decision_system.py`
+accepts repositories or documents plus JSONL/CSV resolved cases. It inventories
+the material, separates case families, checks whether their action sets are
+bounded, creates a deterministic train/holdout split, measures an explicitly
+non-JEV text baseline, ranks candidates by readiness and optional workload value,
+and scaffolds the highest-ranked eligible surface. Raw case context is not copied
+into the discovery output.
+
+The discovered bundle is a review artifact: `production: false`, no executable
+bindings, human approval on non-fallback actions, and candidate maturity on every
+generated semantic judgment. Historical behavior is never silently promoted into
+policy or authority.
+
 ## 5. Outputs: what each file is and what it is for
+
+Before a bundle exists, decision discovery produces:
+
+```text
+forge-discovery/
+├── discovery_manifest.yaml
+├── decision_candidates.yaml
+├── evaluation_cases.jsonl
+├── discovery_report.md
+├── bundle_validation.json
+└── candidate_bundle/
+```
+
+The local baseline answers whether the supplied context contains a repeatable
+signal on a disjoint holdout. It does not measure JEV and cannot approve release.
+After vocabulary review, `evaluate_discovered_system.py` runs the real JEV or
+Laya candidate Choice over the unchanged frozen holdout without executing an
+action. It rejects illegal answers and emits hashed, `jev_gate.py`-compatible
+records. The candidate bundle then enters the normal semantic compilation
+lifecycle below.
 
 ```text
 semantic-bundle/
