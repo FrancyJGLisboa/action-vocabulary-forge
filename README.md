@@ -1,6 +1,6 @@
-# action-vocabulary-forge
+# decision-system-forge
 
-[![The Semantic Decision Forge, explained in one page](docs/img/executive-comic.jpg)](docs/executive-comic.pdf)
+[![Decision System Forge, explained in one page](docs/img/executive-comic.jpg)](docs/executive-comic.pdf)
 
 *One-page explainer ([PDF](docs/executive-comic.pdf), [editable SVG](docs/executive-comic.svg)).
 The Forge compiles source material into evidence-backed semantic judgments, legal action
@@ -123,8 +123,8 @@ not change. Expect the bundle schema to move; the validator is the contract.
 ## Install as a skill
 
 ```bash
-git clone https://github.com/FrancyJGLisboa/action-vocabulary-forge ~/projects/action-vocabulary-forge
-~/projects/action-vocabulary-forge/scripts/install.sh      # symlinks into Claude, Codex, Copilot, Gemini
+git clone https://github.com/FrancyJGLisboa/decision-system-forge ~/projects/decision-system-forge
+~/projects/decision-system-forge/scripts/install.sh      # symlinks into Claude, Codex, Copilot, Gemini
 ```
 
 Requires Python 3.11+ and PyYAML. `ui` handlers need Playwright and `mcp` handlers the `mcp` package, only on the host that runs them. `TYPESAFE_API_KEY` is read from the
@@ -182,7 +182,7 @@ the 0.5 floor and the human-labels-only gate are the same code.
 ## Try it
 
 ```bash
-cd ~/projects/action-vocabulary-forge
+cd ~/projects/decision-system-forge
 python3 -m unittest discover -s tests -v
 python3 scripts/validate_action_bundle.py examples/validation-bundle
 python3 scripts/generate_adapter.py examples/validation-bundle --output /tmp/forge/adapter.py

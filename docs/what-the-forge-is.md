@@ -1,4 +1,4 @@
-# What the Semantic Decision Forge is, what it produces, and how to use it
+# What Decision System Forge is, what it produces, and how to use it
 
 Use this text as context for any person or agent who needs to understand or use the Forge.
 It answers the most common confusion first: **does the Forge inject the JEV into any system?**
@@ -10,7 +10,7 @@ fit is one call in the system, made once, at a single decision point. Everything
 
 ## 1. Definition in three sentences
 
-The action-vocabulary-forge is a semantic decision compiler. It reads heterogeneous material
+Decision System Forge is a semantic decision compiler. It reads heterogeneous material
 (code, APIs, UIs, documents, SOPs, schemas, datasets, logs and traces), records what that material
 supports, compiles narrow Choice/Noul/Score judgments, and links them to bounded legal action
 surfaces. The result is a **Semantic Decision Bundle** plus an adapter: JEV handles typed semantic
@@ -281,7 +281,7 @@ minimum; the sample is small; the bundle is invalid.
 
 ### 6.3 Agent creating a bundle for another system
 
-Invoke the `action-vocabulary-forge` skill with the path and the scope. Rules it enforces:
+Invoke the `decision-system-forge` skill with the path and the scope. Rules it enforces:
 - every item needs evidence with a locator; `inferred` never reaches production;
 - every executable action needs a `binding` with **observed** evidence;
 - what is a rule becomes a predicate (precondition), never a JEV criterion;

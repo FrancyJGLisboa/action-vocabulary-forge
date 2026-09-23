@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the action-vocabulary-forge skill into every agent CLI found on this
+# Install the decision-system-forge skill into every agent CLI found on this
 # machine. Claude Code, Codex CLI, Copilot CLI and Gemini CLI all use the same
 # layout: <config>/skills/<name>/SKILL.md. ~/.agents/skills is the shared
 # canonical location this user already keeps.
@@ -10,7 +10,8 @@
 #   ./install.sh --uninstall
 set -euo pipefail
 
-NAME="action-vocabulary-forge"
+NAME="decision-system-forge"
+LEGACY_NAME="action-vocabulary-forge"
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODE="${1:---link}"
 
@@ -34,6 +35,13 @@ for entry in "${TARGETS[@]}"; do
 
   mkdir -p "$dir"
   dest="$dir/$NAME"
+  legacy_dest="$dir/$LEGACY_NAME"
+
+  # Remove only the legacy symlink installed by this project. Never delete a
+  # user-maintained directory that happens to use the old name.
+  if [ -L "$legacy_dest" ]; then
+    rm "$legacy_dest"
+  fi
 
   case "$MODE" in
     --uninstall)

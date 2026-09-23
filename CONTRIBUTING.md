@@ -14,8 +14,8 @@ Two rules, both enforced by the pre-commit hook and the validator:
 Setup:
 
 ```bash
-git clone https://github.com/FrancyJGLisboa/action-vocabulary-forge
-cd action-vocabulary-forge
+git clone https://github.com/FrancyJGLisboa/decision-system-forge
+cd decision-system-forge
 git config core.hooksPath .githooks
 pip install pyyaml
 python3 -m unittest discover -s tests -v

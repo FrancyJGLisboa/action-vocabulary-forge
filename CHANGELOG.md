@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Rename the project and installed skill from `action-vocabulary-forge` to
+  `decision-system-forge`, reflecting the complete source-to-evaluated-runtime
+  product rather than only its legal-action vocabulary.
 - `discover_decision_system.py`: offline product entry point for a repository/SOP set plus resolved JSONL/CSV cases. It validates and groups histories, ranks bounded decision surfaces by evidence readiness and optional workload value, creates a privacy-safe stratified holdout, reports a clearly labeled local text baseline, and scaffolds the highest-ranked eligible surface as a non-production Semantic Decision Bundle.
 - Candidate discovery never copies raw case context into its outputs, never invents bindings, requires human approval for non-fallback actions, and suppresses bundle generation when evidence or boundedness gates fail. `references/decision-discovery.md` defines the input contract, scoring, outputs, and promotion path; `examples/discovery-input/` provides the tested vertical slice.
 - `evaluate_discovered_system.py`: shadow-only JEV/Laya evaluation on the frozen deterministic holdout. It verifies the original source hash, rejects illegal model answers, writes only hashed case references, distinguishes historical from human-verified labels, and produces a `jev_gate.py`-compatible log plus measured performance JSON.

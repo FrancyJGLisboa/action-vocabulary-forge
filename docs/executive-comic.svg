@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1800" height="2000" viewBox="0 0 1800 2000" role="img" aria-labelledby="title description">
-  <title id="title">The Semantic Decision Forge</title>
-  <desc id="description">A nine-panel executive comic explaining how Action Vocabulary Forge compiles source material into semantic judgments, legal actions, and an evaluated JEV runtime.</desc>
+  <title id="title">Decision System Forge</title>
+  <desc id="description">A nine-panel executive comic explaining how Decision System Forge compiles source material into semantic judgments, legal actions, and an evaluated JEV runtime.</desc>
   <defs>
     <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#071b2c"/>
@@ -50,7 +50,7 @@
   <rect width="1800" height="2000" fill="url(#page)"/>
   <rect x="0" y="0" width="1800" height="178" fill="url(#hero)"/>
   <path d="M0 155 C360 120 680 205 1020 153 S1510 103 1800 145 L1800 178 L0 178 Z" fill="#0a2737" opacity="0.8"/>
-  <text x="70" y="84" class="h1">THE SEMANTIC DECISION FORGE</text>
+  <text x="70" y="84" class="h1">DECISION SYSTEM FORGE</text>
   <text x="75" y="137" class="subtitle">Source material → semantic judgments → legal actions → evaluated JEV runtime</text>
   <text x="1750" y="58" class="tag" text-anchor="end">NOT AN AGENT.</text>
   <text x="1750" y="91" class="tag" text-anchor="end">NOT A PROMPT.</text>

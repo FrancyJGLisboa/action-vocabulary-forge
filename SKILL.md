@@ -1,5 +1,5 @@
 ---
-name: action-vocabulary-forge
+name: decision-system-forge
 description: Compile code, APIs, UIs, documents, SOPs, logs, traces, datasets, or mixed material into an evidence-backed and searchable vocabulary of semantic Choice/Noul/Score judgments, observable states, legal actions, decision surfaces, and evaluated JEV runtime adapters. Use when an agent must turn source material into bounded JEV decision software, discover action vocabularies, or audit a generative classifier for replacement. Do not use for generic summarization or unbounded autonomous execution.
 ---
 
