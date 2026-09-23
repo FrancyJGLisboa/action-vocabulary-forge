@@ -127,6 +127,37 @@ def _unique_ids(labels: Iterable[str]) -> dict[str, str]:
     return result
 
 
+def load_taxonomy_descriptions(path: Path, labels: Iterable[str]) -> dict[str, str]:
+    """Read exact, source-backed label descriptions; ambiguous shapes are ignored."""
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8")) if path.suffix.lower() == ".json" else yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError, yaml.YAMLError):
+        return {}
+    mappings = []
+    if isinstance(raw, Mapping):
+        mappings.append(raw)
+        for key in ("labels", "intents", "taxonomy", "actions"):
+            if isinstance(raw.get(key), Mapping):
+                mappings.append(raw[key])
+    wanted = set(labels)
+    found: dict[str, str] = {}
+    for mapping in mappings:
+        claims: dict[str, list[str]] = defaultdict(list)
+        for label in wanted:
+            value = mapping.get(label)
+            if isinstance(value, str) and value.strip():
+                claims[value.strip()].append(label)
+                if label in found and found[label] != value.strip():
+                    found.pop(label, None)
+                elif label not in found:
+                    found[label] = value.strip()
+        for value, claim_labels in claims.items():
+            if len(claim_labels) > 1:
+                for label in claim_labels:
+                    found.pop(label, None)
+    return found
+
+
 def load_cases(
     path: Path,
     *,
@@ -396,9 +427,16 @@ def candidate_bundle(
     candidate: Mapping[str, Any],
     sources: list[dict[str, Any]],
     cases_source_id: str,
+    taxonomy_descriptions: Mapping[str, str] | None = None,
+    taxonomy_source_id: str | None = None,
 ) -> dict[str, Any]:
     surface_id = candidate["surface_id"]
     actions = list(candidate["actions"])
+    taxonomy_descriptions = taxonomy_descriptions or {}
+    for action in actions:
+        description = taxonomy_descriptions.get(action.get("observed_label", ""))
+        if description:
+            action["taxonomy_description"] = description
     evidence: list[dict[str, Any]] = [
         {
             "evidence_id": "resolved_cases_snapshot",
@@ -412,6 +450,17 @@ def candidate_bundle(
         }
     ]
     for action in actions:
+        if action.get("taxonomy_description") and taxonomy_source_id:
+            evidence.append({
+                "evidence_id": f"taxonomy_{action['action_id']}",
+                "source_id": taxonomy_source_id,
+                "source_type": "document",
+                "locator": next(item["locator"] for item in sources if item["source_id"] == taxonomy_source_id),
+                "claim": f"Taxonomy defines {action['observed_label']!r} as {action['taxonomy_description']!r}.",
+                "grade": "documented",
+                "observed_at": None,
+                "notes": "Authoritative description enriches the candidate criterion; it does not promote maturity or legality.",
+            })
         evidence.append(
             {
                 "evidence_id": _case_evidence_id(surface_id, action["action_id"]),
@@ -502,12 +551,15 @@ def candidate_bundle(
                 "evidence_refs": [evidence_ref],
             }
         )
+        taxonomy = action.get("taxonomy_description")
         criterion = (
             "Evidence is ambiguous or automation is not approved."
             if is_fallback
-            else f"Case evidence supports {action['observed_label']!r}; human approval is still required."
+            else (f"Case evidence matches the authoritative taxonomy meaning: {taxonomy} Human approval is still required."
+                  if taxonomy else f"Case evidence supports {action['observed_label']!r}; human approval is still required.")
         )
-        candidates.append({"action_id": action_id, "criterion": criterion, "evidence_refs": [evidence_ref]})
+        refs = [evidence_ref] + ([f"taxonomy_{action_id}"] if taxonomy and taxonomy_source_id else [])
+        candidates.append({"action_id": action_id, "criterion": criterion, "evidence_refs": refs})
         choices.append({"id": action_id, "criterion": criterion, "executor_action_id": action_id})
 
     judgments = []
@@ -522,7 +574,7 @@ def candidate_bundle(
                 "type": "noul",
                 "instructions": f"Does `context.case` support the historical resolution {action['observed_label']!r}?",
                 "criteria": {
-                    "true": f"Evidence supports the meaning of {action['observed_label']!r}.",
+                    "true": (f"Evidence matches the taxonomy definition: {taxonomy}." if taxonomy else f"Evidence supports the meaning of {action['observed_label']!r}."),
                     "false": "Evidence contradicts that resolution or is insufficient.",
                 },
                 "state_paths": ["context.case"],
@@ -530,7 +582,7 @@ def candidate_bundle(
                 "surface_ids": [surface_id],
                 "purpose": "Candidate semantic feature; it cannot authorize the action.",
                 "maturity": "candidate",
-                "evidence_refs": [evidence_ref],
+                "evidence_refs": [evidence_ref] + ([f"taxonomy_{action['action_id']}"] if taxonomy and taxonomy_source_id else []),
             }
         )
 
@@ -754,6 +806,8 @@ def write_outputs(
     hourly_cost: float | None,
     monthly_volume: int | None,
     force: bool,
+    taxonomy_descriptions: Mapping[str, str] | None = None,
+    taxonomy_source_id: str | None = None,
 ) -> Path | None:
     if output.exists() and not output.is_dir():
         raise DiscoveryError(f"output path exists and is not a directory: {output}")
@@ -840,7 +894,7 @@ def write_outputs(
         top = eligible[0]
         cases_source_id = next(item["source_id"] for item in sources if Path(item["locator"]).resolve() == cases_path.resolve())
         bundle_path = output / "candidate_bundle"
-        bundle = candidate_bundle(system_id, scope, top, sources, cases_source_id)
+        bundle = candidate_bundle(system_id, scope, top, sources, cases_source_id, taxonomy_descriptions, taxonomy_source_id)
         init_semantic_bundle.write_bundle(bundle_path, bundle, force=True)
         errors, warnings, counts = validate_semantic_bundle.validate(bundle_path)
         if errors:
@@ -928,6 +982,12 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         surface_field=args.surface_field,
     )
     sources = inventory_sources(args.source, cases_path)
+    taxonomy_path_arg = getattr(args, "taxonomy", None)
+    taxonomy_descriptions = load_taxonomy_descriptions(taxonomy_path_arg, {case.action_label for case in cases}) if taxonomy_path_arg else {}
+    taxonomy_source_id = None
+    if taxonomy_path_arg:
+        taxonomy_path = taxonomy_path_arg.expanduser().resolve()
+        taxonomy_source_id = next((item["source_id"] for item in sources if Path(item["locator"]).resolve() == taxonomy_path), None)
     grouped: dict[str, list[Case]] = defaultdict(list)
     for case in cases:
         grouped[case.surface].append(case)
@@ -970,6 +1030,8 @@ def discover(args: argparse.Namespace) -> dict[str, Any]:
         hourly_cost=args.hourly_cost,
         monthly_volume=args.monthly_volume,
         force=args.force,
+        taxonomy_descriptions=taxonomy_descriptions,
+        taxonomy_source_id=taxonomy_source_id,
     )
     return {
         "output": str(args.output.expanduser().resolve()),
@@ -985,6 +1047,7 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--cases", type=Path, required=True, help="resolved cases as JSONL/NDJSON or CSV")
     result.add_argument("--source", type=Path, action="append", default=[], help="source file or directory; repeatable")
+    result.add_argument("--taxonomy", type=Path, help="optional JSON/YAML label-to-description taxonomy")
     result.add_argument("--output", type=Path, required=True)
     result.add_argument("--system-id", required=True)
     result.add_argument("--scope")

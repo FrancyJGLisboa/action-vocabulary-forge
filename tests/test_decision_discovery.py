@@ -49,6 +49,32 @@ def arguments(output: Path, cases: Path = FIXTURE / "cases.jsonl", **overrides) 
 
 
 class DiscoveryVerticalSliceTests(unittest.TestCase):
+    def test_taxonomy_description_enriches_criteria_and_is_documented(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            taxonomy = root / "taxonomy.json"
+            taxonomy.write_text(json.dumps({"labels": {"request_documents": "Ask for missing paperwork only."}}))
+            output = root / "discovery"
+            discovery.discover(arguments(output, source=[FIXTURE / "sop.md", taxonomy], taxonomy=taxonomy))
+            bundle = output / "candidate_bundle"
+            surfaces = yaml.safe_load((bundle / "decision_surfaces.yaml").read_text())
+            row = next(item for item in surfaces["decision_surfaces"][0]["candidate_actions"] if item["action_id"] == "request_documents")
+            self.assertIn("Ask for missing paperwork only", row["criterion"])
+            evidence = (bundle / "evidence_ledger.jsonl").read_text()
+            self.assertIn("taxonomy_request_documents", evidence)
+
+    def test_ambiguous_or_absent_taxonomy_keeps_generic_criteria(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            taxonomy = root / "taxonomy.json"
+            taxonomy.write_text(json.dumps({"labels": {"request_documents": "one", "expedite_shipment": "one"}}))
+            output = root / "discovery"
+            discovery.discover(arguments(output, source=[FIXTURE / "sop.md", taxonomy], taxonomy=taxonomy))
+            bundle = output / "candidate_bundle"
+            surfaces = yaml.safe_load((bundle / "decision_surfaces.yaml").read_text())
+            row = next(item for item in surfaces["decision_surfaces"][0]["candidate_actions"] if item["action_id"] == "request_documents")
+            self.assertIn("Case evidence supports 'request_documents'", row["criterion"])
+
     def test_discovers_ranks_measures_and_scaffolds_safe_bundle(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "discovery"
