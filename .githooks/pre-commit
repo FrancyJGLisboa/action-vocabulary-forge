@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Refuse a commit that breaks the tests, ships an invalid example bundle, or
-# lets examples/validation-bundle drift from init_action_bundle.py --example.
+# lets either checked-in example drift from its initializer.
 # Enabled by:  git config core.hooksPath .githooks
 set -u
 cd "$(git rev-parse --show-toplevel)"
@@ -19,11 +19,26 @@ if ! out=$(python3 scripts/validate_action_bundle.py examples/validation-bundle 
   fail=1
 fi
 
+if ! out=$(python3 scripts/validate_semantic_bundle.py examples/semantic-validation-bundle 2>&1); then
+  printf '%s\n' "$out" | sed 's/^/  /'
+  say "examples/semantic-validation-bundle is invalid."
+  fail=1
+fi
+
 tmp=$(mktemp -d)
 python3 scripts/init_action_bundle.py "$tmp/bundle" --example >/dev/null 2>&1
 if ! diff -rq "$tmp/bundle" examples/validation-bundle >/dev/null 2>&1; then
   say "examples/validation-bundle drifted from init_action_bundle.py --example."
   say "   regenerate:  python3 scripts/init_action_bundle.py examples/validation-bundle --example --force"
+  fail=1
+fi
+rm -rf "$tmp"
+
+tmp=$(mktemp -d)
+python3 scripts/init_semantic_bundle.py "$tmp/bundle" --example >/dev/null 2>&1
+if ! diff -rq "$tmp/bundle" examples/semantic-validation-bundle >/dev/null 2>&1; then
+  say "examples/semantic-validation-bundle drifted from init_semantic_bundle.py --example."
+  say "   regenerate:  python3 scripts/init_semantic_bundle.py examples/semantic-validation-bundle --example --force"
   fail=1
 fi
 rm -rf "$tmp"

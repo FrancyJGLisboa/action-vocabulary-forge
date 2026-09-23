@@ -1,37 +1,58 @@
 ---
 name: action-vocabulary-forge
-description: Discover and compile bounded decision surfaces in an application, website, API, codebase, SOP, documentation set, log stream, or mixed system, then produce JEV-ready states, legal action sets, boundaries, and evidence. Use when an agent must find complex-input-to-finite-choice decisions or audit a generative call for classifier replacement. Do not use for generic summarization or for executing actions in a live system.
+description: Compile code, APIs, UIs, documents, SOPs, logs, traces, datasets, or mixed material into an evidence-backed and searchable vocabulary of semantic Choice/Noul/Score judgments, observable states, legal actions, decision surfaces, and evaluated JEV runtime adapters. Use when an agent must turn source material into bounded JEV decision software, discover action vocabularies, or audit a generative classifier for replacement. Do not use for generic summarization or unbounded autonomous execution.
 ---
 
-# Decision Surface Discovery
+# Semantic Decision Compilation
 
-Transform an environment into a reviewable **Decision Surface Bundle**. The primary output is a bounded decision surface: a real point where complex context is reduced to a small set of next actions. The action vocabulary, states, transitions, and evidence are the supporting control plane.
+Compile the complete path from source material to an evaluated JEV runtime. The
+Forge supports two scopes:
+
+- **Semantic bundle:** material → semantic IR → judgments → legal actions → runtime.
+- **Action-only bundle:** an existing bounded decision point → legal actions → runtime.
+
+Prefer a Semantic Decision Bundle for new systems. Keep Action Bundles compatible
+for focused audits and existing integrations.
 
 ## Non-negotiable model
 
 Keep these questions separate:
 
-1. **What exists?** Discover candidate actions and states from evidence.
-2. **What is legal now?** Deterministic predicates and permissions filter the registry.
-3. **Which legal action fits the context?** JEV selects from the filtered set.
-4. **What executes?** A normal adapter performs the selected action and records the resulting state.
+1. **What does the material support?** Record sources, authority, concepts, relations, and evidence.
+2. **What can be judged semantically?** Define narrow Choice, Noul, or Score questions with state inputs and activation rules.
+3. **What actions exist and are legal now?** Deterministic predicates and permissions filter the action registry.
+4. **Which legal action fits?** JEV selects only from the filtered set; supporting judgments may enrich its state.
+5. **What executes and did it work?** A verified adapter performs the action, logs it, and is evaluated against trusted labels.
 
-Never ask JEV to authorize an action that code can reject deterministically. Never invent an executable action from an LLM guess. An action with `inferred` or `hypothetical` evidence may remain in the ledger, but cannot enter a production decision surface.
+Never let a semantic judgment authorize an action. Never invent an executable
+binding from prose. `inferred` and `hypothetical` evidence may support candidates,
+but never reviewed production judgments, actions, or surfaces.
 
-## Deliverable
+“Arbitrary material” means the Forge can inspect heterogeneous inputs. It does not
+mean every input contains enough authority or runtime evidence for automation:
 
-Start with opportunity discovery. Look for a complex input, a finite output set, and semantic interpretation. Prioritize surfaces that are currently implemented as an LLM or other generative call. A function named approve() is only an action candidate; a prompt that asks a model to choose from {approve, reject, retry, escalate} is a decision-surface candidate.
+| Available evidence | Maximum valid output |
+| --- | --- |
+| Descriptive or contextual material | Candidate concepts and judgments |
+| Authoritative rules and action definitions | Reviewable decision surfaces |
+| Verified bindings, traces, and trusted labels | Calibrated executable runtime |
 
-Create these files in the requested output directory. Use the initializer when starting from nothing:
+## Semantic Decision Bundle
+
+Initialize a new bundle:
 
 ```bash
-python3 scripts/init_action_bundle.py ./action-bundle --example
+python3 scripts/init_semantic_bundle.py ./semantic-bundle --example
 ```
 
-The eight files are:
+The semantic front end adds four artifacts to the existing Action Bundle:
 
 ```text
-action-bundle/
+semantic-bundle/
+├── material_manifest.yaml
+├── semantic_ir.yaml
+├── judgment_registry.yaml
+├── semantic_links.yaml
 ├── surface_candidates.yaml
 ├── action_registry.yaml
 ├── state_registry.yaml
@@ -42,192 +63,132 @@ action-bundle/
 └── coverage_report.md
 ```
 
-Run the validator before presenting the bundle:
+Read [references/semantic-decision-schema.md](references/semantic-decision-schema.md)
+when creating or reviewing the semantic files. Read
+[references/bundle-schema.md](references/bundle-schema.md) for the action and
+adapter files.
+
+## Workflow
+
+### 1. Scope the decision outcome and inventory material
+
+Start from behavior the resulting software should select, change, show, or hand
+off. Record every inspected source in `material_manifest.yaml`, including its
+locator and authority. Record each supported claim separately in
+`evidence_ledger.jsonl`.
+
+When the input mixes code, UI, APIs, SOPs, and traces, read
+[references/source-playbook.md](references/source-playbook.md). Preserve
+disagreements instead of resolving them through similarity.
+
+### 2. Compile semantic structure and judgment families
+
+Write concepts and relations into `semantic_ir.yaml`. Create one judgment for one
+narrow, independently useful semantic property:
+
+- `choice`: one option from a defined set;
+- `noul`: probability that a condition holds;
+- `score`: position on ordered, concrete levels.
+
+Every judgment declares its required `state_paths`, `activate_when` predicates,
+linked surfaces, maturity, and evidence. Use families for repeated parameterized
+questions. Keep large vocabularies virtual: store canonical families and indexed
+records, then retrieve and instantiate a small relevant subset at runtime. Do not
+send a million questions in one request.
+
+Candidate questions may be generated from material. Promote them to `reviewed`
+only after checking source support, candidate coverage, neighboring boundaries,
+examples, counterexamples, and the downstream behavior they affect.
+
+### 3. Compile legal action surfaces
+
+Discover and canonicalize observable states, actions, transitions, bindings, and
+small state-specific decision surfaces. Every action still needs:
+
+- `choose_when`, `do_not_choose_when`, parameters, outputs, and side effects;
+- deterministic preconditions and allowed states;
+- risk, reversibility, destination states, and success condition;
+- evidence and an observed binding for generated execution.
+
+Add `supporting_judgments` to a surface when semantic features should be evaluated
+before its final action Choice. Include a safe fallback or abstention path.
+
+### 4. Validate, index, and compile the runtime plan
 
 ```bash
-python3 scripts/validate_action_bundle.py ./action-bundle
+python3 scripts/validate_semantic_bundle.py ./semantic-bundle
+python3 scripts/semantic_index.py build ./semantic-bundle ./semantic-bundle/semantic.sqlite
+python3 scripts/semantic_index.py search ./semantic-bundle/semantic.sqlite "refund policy"
+python3 scripts/semantic_runtime.py ./semantic-bundle \
+  --state-file state.json --context-file context.json
 ```
 
-For a concrete runtime choice set, compile one surface for one observable state:
+`semantic_runtime.py` compiles two stages:
+
+1. reviewed supporting judgments active for the current observable state;
+2. a final Choice containing only actions whose allowed state and preconditions pass.
+
+The semantic answers enrich stage two but never widen its legal choices. If only
+one action is legal, the runtime selects it deterministically without a second JEV
+call. If no safe fallback is legal, compilation stops.
+
+### 5. Generate, run in shadow, calibrate, and release
 
 ```bash
+python3 scripts/generate_adapter.py ./semantic-bundle \
+  --output ./semantic-bundle/generated_adapter.py
+python3 scripts/calibrate_thresholds.py ./semantic-bundle \
+  --log decision_log.jsonl --labels labels.jsonl --write
+python3 scripts/evaluate_decisions.py ./semantic-bundle \
+  --log decision_log.jsonl --labels labels.jsonl
+```
+
+Use `semantic_runtime.run(...)` with the generated adapter to execute the two-stage
+path. It writes supporting answers through `JudgmentLog` in the raw format accepted
+by `jev_gate.py`; evaluate those judgments separately when labels exist. The action
+adapter re-checks preconditions, applies calibrated thresholds, executes only an
+observed handler, and writes the final decision log.
+
+Do not enable a mutating surface before the held-out evaluation prints
+`RELEASE GATE: APPROVE` and the responsible human approves it. Read
+[references/evaluation.md](references/evaluation.md) for metrics and
+[references/adapter-generation.md](references/adapter-generation.md) for host use.
+
+## Action-only compatibility
+
+For a known bounded decision point with no semantic front-end work:
+
+```bash
+python3 scripts/init_action_bundle.py ./action-bundle --example
+python3 scripts/validate_action_bundle.py ./action-bundle
 python3 scripts/compile_jev_surface.py ./action-bundle \
   --state validation_failed --surface resolve_validation_failure
 ```
 
-The compiler is deterministic. Its JSON is the input boundary for a small JEV adapter, not a JEV prediction.
+The original eight-file bundle, validator, adapter generator, calibration, and
+evaluation workflow remain supported.
 
-Generate the first adapter implementation from the reviewed bundle:
+## Evidence and runtime boundaries
 
-    python3 scripts/generate_adapter.py ./action-bundle \
-      --output ./action-bundle/generated_adapter.py
+Use exactly these evidence grades:
 
-The generated Python module builds the JEV request, validates `Choice`, `Noul`,
-or `Score` answers, applies the declared abstention and confidence policy,
-re-checks `preconditions` and `allowed_from_states`, writes a decision log, and
-renders one handler per action from the action's `binding`. A handler executes
-only when the binding has `verified_runtime` or `observed_trace` evidence;
-otherwise it is a stub that names the missing evidence. The generator never
-invents HTTP calls, browser clicks, CLI commands, permissions, or side effects
-from descriptions alone: it only executes what discovery recorded and observed.
+| Grade | Production use |
+| --- | --- |
+| `verified_runtime` | judgment, surface, action, and executable binding |
+| `verified_schema` | judgment, surface, and action; not binding execution by itself |
+| `documented` | judgment, surface, and action; not binding execution by itself |
+| `observed_trace` | judgment, surface, action, and executable binding |
+| `inferred` | candidate only |
+| `hypothetical` | candidate only |
 
-Then close the loop with the decision log:
-
-    python3 scripts/calibrate_thresholds.py ./action-bundle \
-      --log decision_log.jsonl --labels labels.jsonl --write
-    python3 scripts/evaluate_decisions.py ./action-bundle \
-      --log decision_log.jsonl --labels labels.jsonl
-
-Calibration writes per-question and per-action thresholds into
-`jev_adapter_spec.yaml: policy`; an empty policy makes every non-fallback action
-abstain. The evaluator prints the references/evaluation.md metrics on the
-held-out split and a `RELEASE GATE: APPROVE | HOLD` line. The human's remaining
-role is to grant credentials, answer the release gate, and resolve abstentions.
-Abstentions on reversible actions can go to a second decider first
-(`run(..., escalate=fn)`, logged as `decided_by: escalation`); the gate still
-judges human labels only (`label_source`), so that decider never grades itself.
-
-When TypeSafe credentials are available, run the compiled surface through JEV:
-
-    python3 scripts/run_jev_choice.py /tmp/compiled-surface.json \
-      --context "The validation failed with a transient timeout; retry budget remains."
-
-The adapter uses the current TypeSafe HTTP shape: model jev-latest, endpoint /v1/systemone, a Choice question, and criteria as an object. It validates that the returned choice is one of the compiled action IDs before exposing it to an executor. Keep TYPESAFE_API_KEY server-side and never write it into bundle artifacts.
-
-For a codebase-first audit of generative calls, run:
-
-    python3 scripts/scan_llm_opportunities.py ./path/to/source \
-      --output ./action-bundle/surface_candidates.yaml
-
-Treat that scan as candidate generation. Review each candidate against source evidence before promoting it into decision_surfaces.yaml.
-
-## Discovery workflow
-
-### 1. Find decision-surface candidates
-
-Search for:
-
-- model calls whose prompt contains a closed list, enum, JSON schema, or routing instruction;
-- handlers, workflow nodes, approval gates, and triage queues where one of a few outcomes follows complex context;
-- repeated human or agent traces with the same small action set;
-- UI, API, or tool states where deterministic guards leave a semantic choice.
-
-Record each candidate in surface_candidates.yaml with the input, observed options, current implementation, evidence, and a strength rating. A candidate is strong when it has a bounded output set, semantic interpretation is required, and the current implementation is generative.
-
-### 2. Inventory the sources and their authority
-
-Record every inspected source in `evidence_ledger.jsonl`. Prefer independent convergence:
-
-- runtime/API schemas and tool definitions;
-- code routes, commands, handlers, enums, guards, tests, and workflow nodes;
-- UI controls, accessibility tree, navigation targets, and network operations;
-- SOP/documentation rules (`MUST`, `MUST NOT`, `IF/THEN`, approve, reject, retry, escalate, publish);
-- logs, traces, and human decisions with `before_state`, `context`, `chosen_action`, `result`, and `after_state`.
-
-Use `source_id` values that are stable and point to a file, URL, route, log query, or trace slice. Do not silently merge two differently named operations.
-
-### 3. Canonicalize candidates
-
-Create one `action_id` for one semantic operation. Merge aliases only when at least two sources support the same meaning and side effects. Keep the aliases and all supporting evidence in the action record. Examples: a UI “Publish” button, `POST /reports/{id}/publish`, `publish_report()`, and `REPORT_PUBLISHED` can converge on `publish_report`.
-
-Create observable states only when the state changes the legal action set. Prefer predicates over subjective labels:
-
-```yaml
-state_id: candidate_ambiguous
-observable_predicate: "eligible_candidate_count > 1"
-```
-
-### 4. Write action contracts
-
-Every action must state:
-
-- `description`, `choose_when`, and `do_not_choose_when`;
-- deterministic `preconditions` and `allowed_from_states`;
-- `parameters`, `outputs`, and `side_effects`;
-- `risk` (`low`, `medium`, `high`, or `critical`) and `reversible`;
-- `destination_states` and `success_condition`;
-- evidence references, examples, and counterexamples;
-- a `binding` for every action you expect the adapter to execute: `kind`
-  (`python_callable`, `http`, `cli`, `mcp`, `ui`), `locator`, `arg_mapping`, and
-  `evidence_refs` pointing at ledger entries that show the invocation. Record
-  the binding at discovery time from what you observed (the function that was
-  called, the request that was sent, the command that ran). Never write a
-  secret into a binding; name the environment variable in `auth_env`.
-
-Actions that mutate data, publish, delete, send, merge, or otherwise have external side effects require explicit preconditions. Irreversible or critical actions also require a human confirmation or policy gate in the contract and must not be a fallback action unless the user explicitly requests that policy.
-
-### 5. Compile local decision surfaces
-
-A decision surface is a small, state-specific choice set. It must include:
-
-- an observable activation state or predicate;
-- two or more candidate actions when a semantic choice exists;
-- the criterion that distinguishes each candidate;
-- a safe `fallback_action` and/or `abstention_choice`;
-- evidence references for the surface and each candidate.
-
-Include `no_valid_action`, `insufficient_information`, or `human_review` when the environment can produce an out-of-set case. Do not force a choice merely to keep the classifier exhaustive.
-
-For large vocabularies, compose hierarchical surfaces (domain → operation family → concrete action) or generate the surface from the current state. Keep each JEV call small and auditable.
-
-### 6. Define the vendor-neutral adapter
-
-`jev_adapter_spec.yaml` should map each classifier question to exactly one surface and map every choice to an executor `action_id`. Keep provider-specific SDK fields out of the bundle. A JEV adapter may add model configuration later, but it must preserve choice IDs, abstention behavior, and the evidence boundary.
-
-The generated adapter is the mechanical implementation of this boundary. Its
-handlers come from the bindings: `python_callable`, `http`, `cli`, `mcp`
-(MCP SDK) and `ui` (Playwright) bindings with observed evidence become
-executable code; any binding without observed evidence becomes a stub that the
-host overrides with `HANDLERS[action_id] = callable`. The host may still pass a deterministic
-`guard`, and the adapter re-evaluates every action precondition before the
-side effect. Read [references/adapter-generation.md](references/adapter-generation.md).
-
-### 7. Validate and report coverage
-
-The validator must fail on unknown references, duplicate IDs, illegal transitions, invalid evidence grades, production surfaces using weak evidence, missing fallbacks, and risky actions without guards. `coverage_report.md` should state inspected source types, supported states, actions with independent evidence, unresolved candidates, and explicit blind spots. A clean validator result means the bundle is structurally coherent; it does not prove semantic correctness, so retain human review for the registry and high-risk surfaces. The validator also rejects bindings without evidence, binding values that look like secrets, unparseable predicates, fallbacks that are irreversible or critical, and policy entries that reference unknown questions or actions.
-
-### 8. Calibrate and evaluate
-
-Run the generated adapter with `log=DecisionLog(path)` (or set `FORGE_DECISION_LOG`). Once trusted labels exist for the logged cases, calibrate the thresholds and evaluate the held-out split:
-
-    python3 scripts/calibrate_thresholds.py ./action-bundle --log decision_log.jsonl --labels labels.jsonl --write
-    python3 scripts/evaluate_decisions.py ./action-bundle --log decision_log.jsonl --labels labels.jsonl
-
-Calibration picks, per question and per proposed action, the lowest confidence bin whose cumulative accuracy stays above `--min-accuracy` (default 0.97) and needs `--min-samples` (default 30) records per group; groups without enough evidence stay uncalibrated and abstain. The evaluator holds the release until the held-out set shows zero illegal actions, every question has an abstention path, every exercised action has a threshold, and boundary and abstention accuracy meet their minimums. Present the `RELEASE GATE` block to the human; do not enable a surface in production before they answer it.
-
-## Opportunity audit
-
-For every promoted surface, record whether it can replace or reduce a generative call:
-
-    bounded_output: true
-    semantic_interpretation_required: true
-    current_implementation: generative_call
-    replacement_strength: strong
-
-Do not claim replacement from syntax alone. Confirm that the finite options are stable, the semantic boundary is documented by examples or traces, and a safe abstention exists. Leave open-ended investigation and novel reasoning with the frontier model.
-
-Evaluate the bundle on action recall, action precision, surface coverage, boundary accuracy, abstention accuracy, illegal-action rate, JEV accuracy, replacement rate, cost, and latency. Read references/evaluation.md for the benchmark protocol.
-
-## Evidence grades
-
-Use exactly these grades:
-
-| Grade | Meaning | Production decision surface |
-|---|---|---|
-| `verified_runtime` | Observed in a running system or test | allowed |
-| `verified_schema` | Present in an authoritative API/tool/schema | allowed |
-| `documented` | Explicitly specified by an owned SOP or document | allowed |
-| `observed_trace` | Repeatedly observed in a trace or human decision log | allowed |
-| `inferred` | Plausible synthesis without direct support | forbidden |
-| `hypothetical` | Proposed future capability | forbidden |
-
-When sources disagree, preserve both records, mark the action as unresolved, and route the surface to `human_review` instead of silently choosing one interpretation.
+The generated runtime is a boundary, not an autonomous agent. Code owns control
+flow, permissions, exact calculations, deterministic rules, side effects, and
+secrets. JEV supplies typed semantic judgments and probabilities. Humans own
+credentials, release approval, disputed labels, and high-risk confirmation.
 
 ## Output language
 
-Use the user's language for descriptions and criteria when practical, but keep IDs stable, lowercase, and `snake_case`. Do not include secrets, credentials, personal data, or copied proprietary logs in the bundle; reference them by a redacted source locator.
-
-## References
-
-- Read [references/bundle-schema.md](references/bundle-schema.md) when creating or reviewing artifact fields.
-- Read [references/source-playbook.md](references/source-playbook.md) when the input mixes code, UI, APIs, SOPs, and traces.
+Use the user's language for descriptions and criteria when practical. Keep IDs
+stable, lowercase, and `snake_case`. Never copy secrets, credentials, personal
+data, or proprietary payloads into the bundle; use redacted source locators and
+environment-variable names.

@@ -2,6 +2,20 @@
 
 Use this guide while discovering candidates. It is a search strategy, not permission to infer unsupported behavior.
 
+## Semantic material pass
+
+Before looking for actions, inventory the material's authority and extract only
+source-supported entities, observable fields, conditions, policies, outcomes, and
+semantic properties. Record them in the Semantic Decision Bundle; preserve their
+locators in the evidence ledger. Generate question candidates only for properties
+that affect a downstream decision, measurement, retrieval, or verification task.
+
+Documents and datasets may support large parameterized question families. Store
+the canonical family and index the concrete records; do not mistake paraphrase
+count for decision coverage. Candidate questions become reviewed instruments only
+after boundary examples, counterexamples, candidate completeness, and downstream
+use have been checked.
+
 ## Generative-call opportunity
 
 Search prompts and model-call wrappers for verbs such as classify, choose, route, approve, reject, retry, escalate, and select. Look for bullets, enum values, JSON schemas, or explicit “one of” instructions near the call. Record the source locator and labels without copying the prompt or payload. Mark the result as a candidate until examples, guards, and abstention behavior are verified.

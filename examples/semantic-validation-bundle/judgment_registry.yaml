@@ -1,0 +1,35 @@
+schema_version: '2.0'
+system_id: validation_example
+families:
+- family_id: condition_supports_action
+  type: noul
+  instructions_template: Does {condition} support choosing {action} in `context`?
+  parameters:
+  - condition
+  - action
+  purpose: Generate evidence features for bounded action selection.
+  maturity: candidate
+  evidence_refs:
+  - runbook_retry
+judgments:
+- judgment_id: failure_is_transient
+  family_id: condition_supports_action
+  type: noul
+  instructions: Does `context.error` indicate a transient failure that may succeed
+    if retried?
+  criteria:
+    'true': The evidence indicates a temporary timeout, unavailable dependency, or
+      other retryable condition.
+    'false': The evidence indicates a deterministic schema, policy, or data error,
+      or is insufficient.
+  state_paths:
+  - context.error
+  activate_when:
+  - validation_status == 'failed'
+  surface_ids:
+  - resolve_validation_failure
+  purpose: Provide an inspectable semantic feature for the final action choice.
+  maturity: reviewed
+  evidence_refs:
+  - runbook_retry
+  - trace_retry_01

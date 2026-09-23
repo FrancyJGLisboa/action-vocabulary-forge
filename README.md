@@ -1,27 +1,26 @@
 # action-vocabulary-forge
 
-[![The Action-Vocabulary-Forge, explained in one page](docs/img/executive-comic.jpg)](docs/executive-comic.pdf)
+[![The Semantic Decision Forge, explained in one page](docs/img/executive-comic.jpg)](docs/executive-comic.pdf)
 
-*One-page explainer ([PDF](docs/executive-comic.pdf)). The Forge does not inject the JEV into a
-system; it compiles the system's decisions into a bundle and generates the adapter the system
-calls at one decision point. Note: panel 6 uses illustrative binding field names; the real
-schema is `binding: {kind: python_callable, locator: module:callable, ...}`, see
-[references/bundle-schema.md](references/bundle-schema.md). Since the comic was drawn: the
-runtime model can also be a local Laya checkpoint (`provider: laya`), and an abstention can
-go to an opt-in second decider such as an LLM (`escalate=`) before the fallback, limited to
-legal actions and never to one that requires confirmation. So panel 4's "only the closed JEV
-runs" and panel 7's "abstain" are the defaults, not the only paths.*
+*One-page explainer ([PDF](docs/executive-comic.pdf), [editable SVG](docs/executive-comic.svg)).
+The Forge compiles source material into evidence-backed semantic judgments, legal action
+surfaces, and an evaluated runtime. Semantic judgments inform action selection but never
+authorize actions; deterministic code owns legality, policy, and execution.*
 
-Point it at a system, approve the release gate, use it. The Forge turns a
-codebase, API, UI, SOP set, or trace log into an **Action Bundle**: a closed,
-evidence-graded vocabulary of states, actions, transitions and decision
-surfaces, plus a generated adapter that lets TypeSafe's JEV pick the next
-action inside deterministic guard rails.
+Point it at source material and a decision outcome. The Forge now compiles a
+**Semantic Decision Bundle**: provenance-tracked material, semantic concepts,
+reusable Choice/Noul/Score judgments, observable states, legal actions,
+decision surfaces, and a generated adapter that lets TypeSafe's JEV decide
+inside deterministic guard rails. The original eight-file **Action Bundle**
+remains supported for focused decision-point audits.
 
 ```text
-system
-  -> discovery (an agent following SKILL.md) writes the bundle with evidence
-  -> validate_action_bundle.py refuses what is not proven
+material
+  -> discovery writes a manifest, semantic IR, judgment registry and evidence
+  -> legal actions and local decision surfaces are compiled from that structure
+  -> validate_semantic_bundle.py refuses unsupported or unsafe links
+  -> semantic_index.py makes the vocabulary searchable
+  -> semantic_runtime.py evaluates active judgments, then exposes only legal actions
   -> generate_adapter.py renders the adapter: JEV call, policy, gates, handlers, log
   -> the adapter runs; every decision lands in decision_log.jsonl
   -> calibrate_thresholds.py turns labeled history into per-action thresholds
@@ -29,10 +28,26 @@ system
   -> a human grants credentials, answers the gate, resolves abstentions
 ```
 
-JEV only ever answers a bounded question ("here is the state, here are the legal
-actions and their criteria, choose one"). Code decides what is legal, applies
-thresholds and abstention, re-checks preconditions, and executes through a
-handler that was generated from an observed binding, never from a guess.
+JEV answers bounded questions. Supporting judgments interpret semantic properties;
+the final action Choice sees only actions already legal in the observable state.
+Code decides legality, applies thresholds and abstention, re-checks preconditions,
+and executes through a handler generated from an observed binding, never a guess.
+
+## Semantic compiler
+
+```bash
+python3 scripts/init_semantic_bundle.py ./semantic-bundle --example
+python3 scripts/validate_semantic_bundle.py ./semantic-bundle
+python3 scripts/semantic_index.py build ./semantic-bundle ./semantic-bundle/semantic.sqlite
+python3 scripts/semantic_runtime.py ./semantic-bundle --state-file state.json --context-file context.json
+python3 scripts/generate_adapter.py ./semantic-bundle --output ./semantic-bundle/generated_adapter.py
+```
+
+The runtime is two-stage: active reviewed judgments are evaluated first; their
+typed answers enrich a final Choice compiled from the currently legal actions.
+One legal action is selected deterministically. No legal fallback stops the run.
+`JudgmentLog` produces `jev_gate.py`-compatible records so supporting judgments,
+not only final actions, can be calibrated against trusted labels.
 
 ## The mental model
 
@@ -56,7 +71,9 @@ A scoped action graph, plus provenance, plus executability, plus a gate.
 
 ## Status
 
-v0.4. One real system wired end to end (a question-routing surface in an internal
+The semantic compiler is new and covered by a validated example plus offline
+two-stage runtime tests. The action-runtime core has one real system wired end to
+end (a question-routing surface in an internal
 ag-commodity tool: 5 generated handlers, JEV 53/54 vs 33/54 for the keyword
 resolver it replaced, release gate approved). A second system (an internal-control test) ran 110 labelled decisions through
 both a hosted and a fully local classifier: 97.3% and 93.6% raw agreement,
@@ -84,14 +101,19 @@ Long-form explainer for people and agents: [docs/what-the-forge-is.md](docs/what
 ## Layout
 
 ```text
-SKILL.md                     the workflow an agent follows (discover -> validate -> generate -> calibrate -> evaluate)
+SKILL.md                     material -> judgments -> legal actions -> evaluated runtime
+references/semantic-decision-schema.md   semantic manifest, IR, judgments, links and runtime plan
 references/bundle-schema.md  every bundle field, including binding, policy, criteria_source, predicates
 references/adapter-generation.md   what the generated module contains and how a host uses it
 references/evaluation.md     metrics, calibration rule, release gate
 references/source-playbook.md   mixed-source discovery guidance
 scripts/init_action_bundle.py       scaffold an empty or example bundle
+scripts/init_semantic_bundle.py     semantic front end plus the compatible Action Bundle
 scripts/scan_llm_opportunities.py   heuristic scan for classifier-replaceable generative calls
 scripts/validate_action_bundle.py   structural and safety checks
+scripts/validate_semantic_bundle.py semantic provenance, judgment and cross-link checks
+scripts/semantic_index.py           SQLite FTS index over the compiled vocabulary
+scripts/semantic_runtime.py         active judgments -> filtered legal Choice -> adapter execution
 scripts/compile_jev_surface.py      one surface, one state -> compiled choice set
 scripts/generate_adapter.py         bundle -> Python adapter (embeds scripts/predicates.py)
 scripts/calibrate_thresholds.py     decision log + labels -> policy thresholds
@@ -100,6 +122,7 @@ scripts/run_jev_choice.py           minimal manual JEV call for a compiled surfa
 scripts/jev_gate.py                 calibrate + release gate for any JEV decision log, no bundle
 scripts/decision_history.py         shared core: labels, split, calibration, metrics, gate checks
 examples/validation-bundle/         the reference bundle used by the tests
+examples/semantic-validation-bundle/ full material-to-runtime reference bundle
 tests/                              unit tests per feature plus test_end_to_end.py
 ```
 
@@ -132,7 +155,7 @@ python3 scripts/evaluate_decisions.py /tmp/forge/bundle --log /tmp/forge/decisio
 
 ## Editing
 
-`examples/validation-bundle/` is generated from `scripts/init_action_bundle.py
---example`; edit the script and regenerate (`--force`). The pre-commit hook
-runs the tests, validates the example, and refuses a drifted example. The
-references are hand-written.
+`examples/validation-bundle/` and `examples/semantic-validation-bundle/` are
+generated from their matching `init_*_bundle.py --example` scripts. Edit the
+initializer and regenerate with `--force`. The pre-commit hook runs the tests,
+validates both examples, and refuses drift. The references are hand-written.

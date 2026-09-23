@@ -1,0 +1,45 @@
+schema_version: '2.0'
+system_id: validation_example
+links:
+- link_id: source_to_failure_concept
+  from:
+    kind: source
+    id: docs/validation.md#retry
+  to:
+    kind: concept
+    id: failure_transience
+  relation: supports
+  evidence_refs:
+  - runbook_retry
+- link_id: concept_to_transience_judgment
+  from:
+    kind: concept
+    id: failure_transience
+  to:
+    kind: judgment
+    id: failure_is_transient
+  relation: measured_by
+  evidence_refs:
+  - runbook_retry
+  - trace_retry_01
+- link_id: judgment_to_surface
+  from:
+    kind: judgment
+    id: failure_is_transient
+  to:
+    kind: surface
+    id: resolve_validation_failure
+  relation: informs
+  evidence_refs:
+  - runbook_retry
+  - trace_retry_01
+- link_id: surface_to_retry
+  from:
+    kind: surface
+    id: resolve_validation_failure
+  to:
+    kind: action
+    id: retry
+  relation: offers
+  evidence_refs:
+  - trace_retry_01

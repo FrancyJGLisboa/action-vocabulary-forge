@@ -1,0 +1,54 @@
+schema_version: '2.0'
+system_id: validation_example
+scope: Choose the next action after a validation failure.
+sources:
+- source_id: analysis:failure-tone
+  kind: analysis
+  locator: analysis:failure-tone
+  authority: contextual
+  included: true
+- source_id: docs/validation.md#retry
+  kind: sop
+  locator: docs/validation.md#retry
+  authority: operational
+  included: true
+- source_id: docs/validation.md#review
+  kind: sop
+  locator: docs/validation.md#review
+  authority: operational
+  included: true
+- source_id: docs/validation.md#review-cli
+  kind: sop
+  locator: docs/validation.md#review-cli
+  authority: operational
+  included: true
+- source_id: trace:validation/000
+  kind: trace
+  locator: trace:validation/000
+  authority: operational
+  included: true
+- source_id: trace:validation/001
+  kind: trace
+  locator: trace:validation/001
+  authority: operational
+  included: true
+- source_id: trace:validation/002
+  kind: trace
+  locator: trace:validation/002
+  authority: operational
+  included: true
+- source_id: trace:validation/003
+  kind: trace
+  locator: trace:validation/003
+  authority: operational
+  included: true
+- source_id: trace:validation/004
+  kind: trace
+  locator: trace:validation/004
+  authority: operational
+  included: true
+- source_id: validation_client.py
+  kind: code
+  locator: validation_client.py
+  authority: operational
+  included: true

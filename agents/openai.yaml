@@ -1,4 +1,4 @@
 interface:
-  display_name: "Decision Surface Discovery"
-  short_description: "Find bounded decisions for JEV"
-  default_prompt: "Use $action-vocabulary-forge to find bounded decision surfaces and compile a JEV-ready bundle from this system."
+  display_name: "Semantic Decision Forge"
+  short_description: "Compile evidence into JEV decision systems"
+  default_prompt: "Use $action-vocabulary-forge to compile this material into evidence-backed JEV judgments, legal action surfaces, and an evaluated runtime."

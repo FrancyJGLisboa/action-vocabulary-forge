@@ -1,0 +1,254 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="2000" viewBox="0 0 1800 2000" role="img" aria-labelledby="title description">
+  <title id="title">The Semantic Decision Forge</title>
+  <desc id="description">A nine-panel executive comic explaining how Action Vocabulary Forge compiles source material into semantic judgments, legal actions, and an evaluated JEV runtime.</desc>
+  <defs>
+    <linearGradient id="page" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071b2c"/>
+      <stop offset="1" stop-color="#123b50"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0b2538"/>
+      <stop offset="0.62" stop-color="#0c4154"/>
+      <stop offset="1" stop-color="#146f72"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#36d6b7"/>
+      <stop offset="1" stop-color="#40a9ff"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#00111d" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#25bea9"/>
+    </marker>
+    <style>
+      .panel { fill:#f6f2e8; stroke:#081d2e; stroke-width:7; rx:22; filter:url(#shadow) }
+      .panel-dark { fill:#0a283a; stroke:#081d2e; stroke-width:7; rx:22; filter:url(#shadow) }
+      .bar { fill:#0a283a }
+      .bar-accent { fill:#117078 }
+      .panel-title { font-family:"DejaVu Sans"; font-size:27px; font-weight:800; letter-spacing:1.5px; fill:#fff }
+      .h1 { font-family:"DejaVu Serif"; font-size:70px; font-weight:800; fill:#fff }
+      .subtitle { font-family:"DejaVu Sans"; font-size:28px; font-weight:600; fill:#bcece5 }
+      .tag { font-family:"DejaVu Sans"; font-size:22px; font-weight:800; fill:#f8d479 }
+      .body { font-family:"DejaVu Sans"; font-size:25px; fill:#102536 }
+      .body-sm { font-family:"DejaVu Sans"; font-size:21px; fill:#102536 }
+      .body-xs { font-family:"DejaVu Sans"; font-size:18px; fill:#102536 }
+      .body-white { font-family:"DejaVu Sans"; font-size:22px; fill:#eefbfa }
+      .strong { font-weight:800 }
+      .muted { fill:#526674 }
+      .accent-text { fill:#087c76; font-weight:800 }
+      .chip { fill:#dff6f0; stroke:#25a891; stroke-width:2; rx:18 }
+      .chip-blue { fill:#e3f2fd; stroke:#438fba; stroke-width:2; rx:18 }
+      .bubble { fill:#fff; stroke:#102536; stroke-width:3; rx:22 }
+      .code { font-family:"DejaVu Sans Mono"; font-size:19px; fill:#102536 }
+      .rule { stroke:#bbcabf; stroke-width:2 }
+      .flow { stroke:#25bea9; stroke-width:8; fill:none; marker-end:url(#arrow) }
+      .flow-thin { stroke:#25bea9; stroke-width:5; fill:none; marker-end:url(#arrow) }
+    </style>
+  </defs>
+
+  <rect width="1800" height="2000" fill="url(#page)"/>
+  <rect x="0" y="0" width="1800" height="178" fill="url(#hero)"/>
+  <path d="M0 155 C360 120 680 205 1020 153 S1510 103 1800 145 L1800 178 L0 178 Z" fill="#0a2737" opacity="0.8"/>
+  <text x="70" y="84" class="h1">THE SEMANTIC DECISION FORGE</text>
+  <text x="75" y="137" class="subtitle">Source material → semantic judgments → legal actions → evaluated JEV runtime</text>
+  <text x="1750" y="58" class="tag" text-anchor="end">NOT AN AGENT.</text>
+  <text x="1750" y="91" class="tag" text-anchor="end">NOT A PROMPT.</text>
+  <text x="1750" y="124" class="tag" text-anchor="end">DECISION INFRASTRUCTURE.</text>
+
+  <!-- Row 1 -->
+  <g transform="translate(35 205)">
+    <rect class="panel" width="550" height="470"/>
+    <rect class="bar" width="550" height="58" rx="17"/>
+    <text x="24" y="39" class="panel-title">1. THE OPERATIONS PROBLEM</text>
+    <rect x="28" y="86" width="494" height="112" class="bubble"/>
+    <path d="M111 197 l22 31 l12 -31" fill="#fff" stroke="#102536" stroke-width="3"/>
+    <text x="53" y="121" class="body strong">“Our people read every case,</text>
+    <text x="53" y="153" class="body strong">interpret policy, then decide</text>
+    <text x="53" y="185" class="body strong">what happens next.”</text>
+    <circle cx="95" cy="295" r="49" fill="#d6a878" stroke="#102536" stroke-width="4"/>
+    <path d="M49 288 Q95 220 141 288 Q128 252 95 248 Q62 252 49 288" fill="#314354"/>
+    <path d="M37 421 Q47 340 95 336 Q144 340 156 421" fill="#314b62" stroke="#102536" stroke-width="4"/>
+    <text x="185" y="271" class="body-sm">The knowledge is scattered across</text>
+    <text x="185" y="301" class="body-sm strong">SOPs, code, tickets, logs, datasets,</text>
+    <text x="185" y="331" class="body-sm strong">and expert judgment.</text>
+    <text x="185" y="383" class="body-sm">Automation fails when it skips the</text>
+    <text x="185" y="413" class="body-sm">meaning between input and action.</text>
+  </g>
+
+  <g transform="translate(625 205)">
+    <rect class="panel" width="550" height="470"/>
+    <rect class="bar-accent" width="550" height="58" rx="17"/>
+    <text x="24" y="39" class="panel-title">2. WHAT FORGE COMPILES</text>
+    <rect x="28" y="85" width="116" height="82" class="chip-blue"/>
+    <text x="45" y="118" class="body-sm strong">SOURCE</text>
+    <text x="50" y="147" class="body-xs">material</text>
+    <path d="M148 126 H191" class="flow-thin"/>
+    <rect x="198" y="85" width="145" height="82" class="chip"/>
+    <text x="214" y="118" class="body-sm strong">SEMANTIC</text>
+    <text x="232" y="147" class="body-xs">structure</text>
+    <path d="M347 126 H390" class="flow-thin"/>
+    <rect x="397" y="85" width="125" height="82" class="chip-blue"/>
+    <text x="415" y="118" class="body-sm strong">RUNTIME</text>
+    <text x="419" y="147" class="body-xs">+ evidence</text>
+    <text x="37" y="216" class="body strong accent-text">A compiler of bounded decisions.</text>
+    <text x="37" y="258" class="body-sm">It extracts concepts and relations, then</text>
+    <text x="37" y="288" class="body-sm">defines reusable Choice, Noul, and Score</text>
+    <text x="37" y="318" class="body-sm">judgments linked to evidence.</text>
+    <line x1="37" y1="341" x2="513" y2="341" class="rule"/>
+    <text x="37" y="378" class="body-sm">It compiles small decision surfaces where</text>
+    <text x="37" y="408" class="body-sm">deterministic code filters legal actions</text>
+    <text x="37" y="438" class="body-sm">before JEV chooses.</text>
+  </g>
+
+  <g transform="translate(1215 205)">
+    <rect class="panel" width="550" height="470"/>
+    <rect class="bar" width="550" height="58" rx="17"/>
+    <text x="24" y="39" class="panel-title">3. WHAT THE CUSTOMER GETS</text>
+    <circle cx="75" cy="116" r="28" fill="#25bea9"/>
+    <text x="66" y="126" class="body strong" fill="#fff">1</text>
+    <text x="120" y="108" class="body-sm strong">A searchable decision vocabulary</text>
+    <text x="120" y="137" class="body-xs muted">Questions, concepts, evidence, boundaries</text>
+    <circle cx="75" cy="204" r="28" fill="#3b9ed0"/>
+    <text x="66" y="214" class="body strong" fill="#fff">2</text>
+    <text x="120" y="196" class="body-sm strong">An executable guarded workflow</text>
+    <text x="120" y="225" class="body-xs muted">Legal actions, adapters, policies, handlers</text>
+    <circle cx="75" cy="292" r="28" fill="#efb957"/>
+    <text x="66" y="302" class="body strong" fill="#fff">3</text>
+    <text x="120" y="284" class="body-sm strong">An evaluation-ready dataset</text>
+    <text x="120" y="313" class="body-xs muted">Judgments, actions, corrections, outcomes</text>
+    <rect x="36" y="351" width="478" height="84" rx="16" fill="#0b3244"/>
+    <text x="58" y="384" class="body-white strong">Value: faster routine decisions,</text>
+    <text x="58" y="416" class="body-white strong">consistent policy, safe exceptions.</text>
+  </g>
+
+  <!-- Row 2 -->
+  <g transform="translate(35 710)">
+    <rect class="panel" width="550" height="535"/>
+    <rect class="bar" width="550" height="58" rx="17"/>
+    <text x="24" y="39" class="panel-title">4. FOUR ROLES, KEPT SEPARATE</text>
+    <text x="34" y="101" class="body-sm strong accent-text">FRONTIER AGENT · compile time</text>
+    <text x="34" y="130" class="body-xs">Inspects material, proposes the vocabulary, cites evidence.</text>
+    <line x1="34" y1="153" x2="516" y2="153" class="rule"/>
+    <text x="34" y="192" class="body-sm strong accent-text">JEV · runtime</text>
+    <text x="34" y="221" class="body-xs">Answers typed semantic questions and chooses among legal options.</text>
+    <line x1="34" y1="244" x2="516" y2="244" class="rule"/>
+    <text x="34" y="283" class="body-sm strong accent-text">CODE · authority and execution</text>
+    <text x="34" y="312" class="body-xs">Owns permissions, predicates, thresholds, side effects, secrets.</text>
+    <line x1="34" y1="335" x2="516" y2="335" class="rule"/>
+    <text x="34" y="374" class="body-sm strong accent-text">HUMANS · governance</text>
+    <text x="34" y="403" class="body-xs">Approve releases, resolve exceptions, correct labels and policy.</text>
+    <rect x="31" y="442" width="488" height="59" rx="15" fill="#fff1c9" stroke="#c48c20" stroke-width="2"/>
+    <text x="54" y="480" class="body-sm strong">Semantic judgment informs. It never authorizes.</text>
+  </g>
+
+  <g transform="translate(625 710)">
+    <rect class="panel" width="550" height="535"/>
+    <rect class="bar-accent" width="550" height="58" rx="17"/>
+    <text x="24" y="39" class="panel-title">5. EVIDENCE SETS THE CEILING</text>
+    <rect x="33" y="90" width="484" height="103" rx="14" fill="#e9eef1"/>
+    <text x="53" y="122" class="body-sm strong">DESCRIPTIVE MATERIAL</text>
+    <text x="53" y="153" class="body-xs">Maximum output: candidate concepts and judgments</text>
+    <text x="53" y="178" class="body-xs muted">No production action authority</text>
+    <path d="M275 199 V222" class="flow-thin"/>
+    <rect x="33" y="228" width="484" height="103" rx="14" fill="#e3f4ef"/>
+    <text x="53" y="260" class="body-sm strong">AUTHORITATIVE RULES + ACTIONS</text>
+    <text x="53" y="291" class="body-xs">Maximum output: reviewable decision surfaces</text>
+    <text x="53" y="316" class="body-xs muted">Still no invented executable binding</text>
+    <path d="M275 337 V360" class="flow-thin"/>
+    <rect x="33" y="366" width="484" height="124" rx="14" fill="#d8f2fb"/>
+    <text x="53" y="398" class="body-sm strong">VERIFIED BINDINGS + TRUSTED LABELS</text>
+    <text x="53" y="429" class="body-xs">Maximum output: calibrated executable runtime</text>
+    <text x="53" y="454" class="body-xs muted">Released only after held-out evaluation</text>
+  </g>
+
+  <g transform="translate(1215 710)">
+    <rect class="panel" width="550" height="535"/>
+    <rect class="bar" width="550" height="58" rx="17"/>
+    <text x="24" y="39" class="panel-title">6. THE COMPILED BUNDLE</text>
+    <rect x="32" y="83" width="486" height="408" rx="16" fill="#eaf1f2" stroke="#9aacb3" stroke-width="2"/>
+    <text x="55" y="119" class="code strong">semantic-bundle/</text>
+    <text x="72" y="153" class="code">material_manifest.yaml</text>
+    <text x="72" y="185" class="code">semantic_ir.yaml</text>
+    <text x="72" y="217" class="code">judgment_registry.yaml</text>
+    <text x="72" y="249" class="code">semantic_links.yaml</text>
+    <text x="72" y="281" class="code">action_registry.yaml</text>
+    <text x="72" y="313" class="code">state_registry.yaml</text>
+    <text x="72" y="345" class="code">decision_surfaces.yaml</text>
+    <text x="72" y="377" class="code">evidence_ledger.jsonl</text>
+    <text x="72" y="409" class="code">jev_adapter_spec.yaml</text>
+    <text x="72" y="441" class="code">coverage_report.md</text>
+    <text x="72" y="473" class="code">semantic.sqlite + logs</text>
+  </g>
+
+  <!-- Row 3 -->
+  <g transform="translate(35 1280)">
+    <rect class="panel" width="840" height="480"/>
+    <rect class="bar-accent" width="840" height="58" rx="17"/>
+    <text x="24" y="39" class="panel-title">7. THE EVALUATED TWO-STAGE RUNTIME</text>
+    <rect x="31" y="93" width="130" height="75" class="chip-blue"/>
+    <text x="55" y="123" class="body-xs strong">OBSERVED</text>
+    <text x="78" y="149" class="body-xs">state</text>
+    <path d="M166 130 H205" class="flow-thin"/>
+    <rect x="211" y="87" width="164" height="87" class="chip"/>
+    <text x="230" y="118" class="body-xs strong">STAGE 1: JEV</text>
+    <text x="230" y="145" class="body-xs">active judgments</text>
+    <path d="M380 130 H419" class="flow-thin"/>
+    <rect x="425" y="87" width="164" height="87" class="chip-blue"/>
+    <text x="445" y="118" class="body-xs strong">CODE FILTERS</text>
+    <text x="447" y="145" class="body-xs">legal actions</text>
+    <path d="M594 130 H633" class="flow-thin"/>
+    <rect x="639" y="87" width="170" height="87" class="chip"/>
+    <text x="658" y="118" class="body-xs strong">STAGE 2: JEV</text>
+    <text x="661" y="145" class="body-xs">best legal action</text>
+    <path d="M724 181 V220 H621" class="flow-thin"/>
+    <rect x="449" y="226" width="196" height="87" class="chip-blue"/>
+    <text x="475" y="257" class="body-xs strong">POLICY + GATES</text>
+    <text x="474" y="284" class="body-xs">execute or escalate</text>
+    <path d="M444 269 H405" class="flow-thin"/>
+    <rect x="211" y="226" width="188" height="87" class="chip"/>
+    <text x="234" y="257" class="body-xs strong">LOG OUTCOMES</text>
+    <text x="237" y="284" class="body-xs">labels + corrections</text>
+    <path d="M305 319 V355" class="flow-thin"/>
+    <rect x="120" y="361" width="355" height="76" rx="18" fill="#0b3244"/>
+    <text x="151" y="392" class="body-xs strong" style="fill:#eefbfa">Calibrate → held-out metrics</text>
+    <text x="151" y="421" class="body-xs strong" style="fill:#eefbfa">→ RELEASE: APPROVE | HOLD</text>
+    <text x="508" y="370" class="body-xs muted">One legal action?</text>
+    <text x="508" y="396" class="body-xs muted">Choose deterministically.</text>
+    <text x="508" y="422" class="body-xs muted">No safe fallback?</text>
+    <text x="508" y="448" class="body-xs muted">Stop.</text>
+  </g>
+
+  <g transform="translate(910 1280)">
+    <rect class="panel" width="855" height="480"/>
+    <rect class="bar" width="855" height="58" rx="17"/>
+    <text x="24" y="39" class="panel-title">8. WHERE THE VALUE HIDES</text>
+    <text x="35" y="104" class="body-sm strong">Look for work that stops because someone must read</text>
+    <text x="35" y="134" class="body-sm strong">something before deciding what happens next.</text>
+    <rect x="34" y="166" width="244" height="105" class="chip"/>
+    <text x="55" y="201" class="body-sm strong">Exception queues</text>
+    <text x="55" y="231" class="body-xs">Operations + logistics</text>
+    <text x="55" y="256" class="body-xs muted">route / retry / review</text>
+    <rect x="305" y="166" width="244" height="105" class="chip-blue"/>
+    <text x="326" y="201" class="body-sm strong">Policy decisions</text>
+    <text x="326" y="231" class="body-xs">Compliance + controls</text>
+    <text x="326" y="256" class="body-xs muted">allow / hold / escalate</text>
+    <rect x="576" y="166" width="244" height="105" class="chip"/>
+    <text x="597" y="201" class="body-sm strong">Document review</text>
+    <text x="597" y="231" class="body-xs">Procurement + support</text>
+    <text x="597" y="256" class="body-xs muted">complete / clarify / act</text>
+    <rect x="34" y="307" width="786" height="129" rx="18" fill="#fff1c9" stroke="#c48c20" stroke-width="2"/>
+    <text x="58" y="344" class="body-sm strong">Best wedge: frequent decision + semantic interpretation</text>
+    <text x="58" y="374" class="body-sm strong">+ bounded actions + historical cases + measurable outcome.</text>
+    <text x="58" y="414" class="body-xs muted">Do not start with millions of speculative questions. Start with one costly queue.</text>
+  </g>
+
+  <!-- Bottom line -->
+  <g transform="translate(35 1795)">
+    <rect class="panel-dark" width="1730" height="168"/>
+    <text x="36" y="49" class="panel-title">9. THE BIGGER PICTURE</text>
+    <text x="36" y="91" class="body-white strong">Forge turns undocumented human reasoning into versioned, searchable, executable, and continuously evaluated decision infrastructure.</text>
+    <text x="36" y="130" class="body-white">Definitions + cases + judgments + corrections + actions + outcomes = a compounding, organization-specific decision dataset.</text>
+    <text x="1690" y="145" class="tag" text-anchor="end">SAFE SCALE, NOT FREE-FORM AUTONOMY.</text>
+  </g>
+</svg>

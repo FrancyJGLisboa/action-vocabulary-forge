@@ -1,4 +1,4 @@
-# What the action-vocabulary-forge is, what it produces, and how to use what it produces
+# What the Semantic Decision Forge is, what it produces, and how to use it
 
 Use this text as context for any person or agent who needs to understand or use the Forge.
 It answers the most common confusion first: **does the Forge inject the JEV into any system?**
@@ -10,13 +10,13 @@ fit is one call in the system, made once, at a single decision point. Everything
 
 ## 1. Definition in three sentences
 
-The action-vocabulary-forge is a decision compiler. It reads a system (code, API, UI, SOPs,
-traces), finds where that system reduces complex context to a choice among a few actions, and
-compiles those choices into an **Action Bundle**: states, actions, transitions, preconditions,
-decision surfaces, and evidence for every claim. From the bundle it generates an **adapter** that
-calls the JEV (TypeSafe System One) for the semantic part of the choice and keeps everything that
-is a rule in deterministic code: what is legal now, thresholds, abstention, confirmation,
-execution, and logging.
+The action-vocabulary-forge is a semantic decision compiler. It reads heterogeneous material
+(code, APIs, UIs, documents, SOPs, schemas, datasets, logs and traces), records what that material
+supports, compiles narrow Choice/Noul/Score judgments, and links them to bounded legal action
+surfaces. The result is a **Semantic Decision Bundle** plus an adapter: JEV handles typed semantic
+judgments and the final choice among legal actions; deterministic code owns legality, thresholds,
+abstention, confirmation, execution and logging. The original **Action Bundle** remains the
+compatible execution back end and may still be used alone for a known decision point.
 
 ## 2. What the Forge is NOT
 
@@ -29,14 +29,19 @@ execution, and logging.
   command, MCP tool, UI operation).
 - Not a replacement for the human on decisions of authority: credentials, approving the release
   gate, reviewing labels, resolving abstentions.
+- Not a promise that arbitrary prose is executable. Contextual material can yield candidate
+  concepts and questions; production automation additionally needs authoritative rules,
+  observable state, verified bindings, traces and labels.
+- Not a giant prompt containing every discovered question. Question families and the search
+  index represent large potential vocabularies; runtime compiles only the active local subset.
 
 ## 3. The two LLMs and their roles (do not confuse them)
 
 | Who | When | Role |
 |---|---|---|
-| Frontier agent (Claude Code, Codex, Gemini…) following `SKILL.md` | discovery, once per system, outside the production path | reads the system, writes the bundle, records evidence and bindings, writes the criteria, labels cases for review |
-| JEV (`jev-latest`, TypeSafe) | runtime, every decision | chooses one option among the legal ones, with confidence and probabilities; nothing else |
-| Code (Forge + generated adapter) | compilation and runtime | validates the bundle, generates the adapter, filters illegal actions, applies policy, executes, logs, calibrates, evaluates |
+| Frontier agent (Claude Code, Codex, Gemini…) following `SKILL.md` | compilation, outside the production path | inventories material, writes semantic IR and question families, builds action surfaces, records evidence and bindings |
+| JEV (`jev-latest`, TypeSafe) | runtime | answers active semantic judgments, then chooses one option among the legal actions, with probabilities |
+| Code (Forge + generated adapter) | compilation and runtime | validates provenance, indexes the vocabulary, filters illegal actions, applies policy, executes, logs, calibrates, evaluates |
 | Human | before and after | approves the gate, reviews labels, resolves abstentions |
 
 Open intelligence works outside the production path and leaves reviewable artifacts.
@@ -44,15 +49,19 @@ Only closed intelligence enters the production path, surrounded by code.
 
 ## 4. Input
 
-A real system and a scope. Any combination of: a code repository, an API or MCP spec,
-screens/DOM, SOPs and documentation, logs and traces of human decisions, test cases.
-The discovery agent receives the path and a scope ("the question routing in
-`decision_contracts.resolve`") and produces the `action-bundle/` folder.
+A desired decision outcome, a scope, and any combination of code, APIs, MCP specs,
+screens/DOM, SOPs, documents, datasets, schemas, logs, traces, historical decisions, and tests.
+The compiler records the authority of each source. Material without operational authority can
+produce candidates but cannot silently become policy or executable behavior.
 
 ## 5. Outputs: what each file is and what it is for
 
-```
-action-bundle/
+```text
+semantic-bundle/
+├── material_manifest.yaml   sources, locators, authority and scope
+├── semantic_ir.yaml         concepts and evidence-backed relations
+├── judgment_registry.yaml   reusable families and concrete Choice/Noul/Score judgments
+├── semantic_links.yaml      traversable source → concept → judgment → surface → action links
 ├── surface_candidates.yaml   inventory of the decision points found (promoted or not)
 ├── action_registry.yaml      the vocabulary: one entry per action, with contract and binding
 ├── state_registry.yaml       observable states, each with a predicate code can evaluate
@@ -66,7 +75,23 @@ action-bundle/
 └── labels.jsonl              (human/agent) ground truth per case, for calibration and eval
 ```
 
-### 5.1 `action_registry.yaml` — one action
+The first four files are the semantic front end. The remaining Action Bundle files preserve
+the existing execution, policy, calibration and release-gate contract.
+
+### 5.1 The semantic front end
+
+`material_manifest.yaml` says what was inspected and how authoritative it is.
+`semantic_ir.yaml` names the entities, facts, conditions, policies, outcomes and semantic
+properties supported by the material. `judgment_registry.yaml` defines question families and
+concrete instruments with state inputs, activation predicates, maturity and evidence.
+`semantic_links.yaml` makes the complete compiled path searchable and auditable without making
+semantic similarity a grant of permission.
+
+`semantic_runtime.py` evaluates reviewed active judgments first. Their answers become explicit
+context for a second request whose Choice criteria have already been filtered to legal actions.
+If one action is legal, code selects it; if no safe fallback is legal, the runtime refuses to run.
+
+### 5.2 `action_registry.yaml` — one action
 
 ```yaml
 - action_id: route_hedge_coverage_corn
@@ -94,7 +119,7 @@ action-bundle/
 Fields that matter to a user: `preconditions` (what code re-checks), `risk` / `reversible` /
 `requires_confirmation` (gates), `binding` (what the adapter will execute).
 
-### 5.2 `decision_surfaces.yaml` — where the JEV comes in
+### 5.3 `decision_surfaces.yaml` — where the JEV comes in
 
 ```yaml
 - surface_id: route_decision_question
@@ -105,13 +130,14 @@ Fields that matter to a user: `preconditions` (what code re-checks), `risk` / `r
     - {action_id: decline_unsupported,           criterion: "Not a hedge-coverage decision for exactly one of corn or soybeans…"}
   fallback_action: decline_unsupported
   abstention_choice: decline_unsupported
+  supporting_judgments: [question_is_hedge_coverage]
   production: true
 ```
 
 A surface is local: one state, few options, one safe fallback. The `criterion` is the only text
 the JEV reads for each option.
 
-### 5.3 `jev_adapter_spec.yaml` — the question and the policy
+### 5.4 `jev_adapter_spec.yaml` — the question and the policy
 
 ```yaml
 model: jev-latest
@@ -136,7 +162,7 @@ classifier_questions:
     abstention_choice: unsupported
 ```
 
-### 5.4 `evidence_ledger.jsonl` — the proof
+### 5.5 `evidence_ledger.jsonl` — the proof
 
 ```json
 {"evidence_id":"binding_render_observed","source_type":"test","locator":"tests/test_decision_contracts.py:12-44",
@@ -147,7 +173,7 @@ Grades: `verified_runtime`, `verified_schema`, `documented`, `observed_trace` (a
 production); `inferred`, `hypothetical` (never in production). A real handler requires
 `verified_runtime` or `observed_trace` on the binding.
 
-### 5.5 `generated_adapter.py` — the module the system calls
+### 5.6 `generated_adapter.py` — the module the system calls
 
 Public API (all generated from the bundle; nothing is hand-written):
 
@@ -175,7 +201,7 @@ set_ui_page(page)        # reuse the host's Playwright page for ui handlers
 set_mcp_caller(fn)       # route mcp handlers through the host's MCP session
 ```
 
-### 5.6 `decision_log.jsonl` — one record per decision
+### 5.7 `decision_log.jsonl` — one record per decision
 
 `case_id, state_id, selected_choice, proposed_action_id` (what the JEV proposed), `action_id`
 (what code executed), `confidence, threshold, abstained, reason, legal_actions, executed,

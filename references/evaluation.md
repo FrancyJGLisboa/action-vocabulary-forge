@@ -2,6 +2,12 @@
 
 Do not judge the Forge by the number of YAML files it emits. Evaluate whether it finds real bounded decisions and preserves their safety boundary.
 
+For Semantic Decision Bundles, also evaluate the supporting judgments. The
+runtime's `JudgmentLog` writes raw Choice/Noul/Score answers in the format accepted
+by `jev_gate.py`; label and gate those instruments separately from the final
+action decision. A large question count is not coverage unless the questions are
+source-supported, non-redundant, active on real states, and useful downstream.
+
 ## Dataset
 
 Sample one real system and freeze:

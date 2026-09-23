@@ -3,6 +3,11 @@
 `generate_adapter.py` produces a Python module from the reviewed Action Bundle.
 It is a runtime boundary, not an autonomous agent.
 
+In a Semantic Decision Bundle, `semantic_runtime.run(...)` evaluates active
+supporting judgments first, filters the final Choice to `legal_actions(state)`,
+then delegates policy and execution to this generated module. The generated
+adapter remains the authoritative execution boundary.
+
 ## Generated responsibilities
 
 The module contains:

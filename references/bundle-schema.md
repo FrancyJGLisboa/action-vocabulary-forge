@@ -2,6 +2,12 @@
 
 The bundle uses YAML for human review and JSONL for append-only evidence. IDs are stable snake_case strings. Empty lists are valid, but production decision surfaces should not be empty.
 
+For the expanded material → judgments → actions workflow, the Action Bundle is
+embedded unchanged inside a Semantic Decision Bundle. Read
+[semantic-decision-schema.md](semantic-decision-schema.md) for
+`material_manifest.yaml`, `semantic_ir.yaml`, `judgment_registry.yaml`,
+`semantic_links.yaml`, and the optional `supporting_judgments` surface field.
+
 ## surface_candidates.yaml
 
 This is the discovery inventory, before promotion into a production decision surface:
@@ -145,6 +151,10 @@ Example:
         abstention_choice: human_review
         production: true
         evidence_refs: [runbook_retry, runbook_review]
+
+A Semantic Decision Bundle may add `supporting_judgments`, a list of reviewed
+judgment IDs evaluated before the final action question. These answers enrich the
+action request; they never change `allowed_from_states` or preconditions.
 
 A surface is not a global action list. It is a local choice set activated by an observable state or predicate. fallback_action and abstention_choice must be safe, known candidate actions.
 

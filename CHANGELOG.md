@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Refresh the executive comic for the semantic compiler flow and add an editable SVG source.
+- Semantic Decision Bundle: `material_manifest.yaml`, `semantic_ir.yaml`, `judgment_registry.yaml`, and `semantic_links.yaml` extend the compatible Action Bundle from arbitrary source material through semantic judgments to legal actions.
+- `init_semantic_bundle.py` and `validate_semantic_bundle.py`: scaffold and enforce provenance, maturity, question shapes, cross-file links, and the invariant that a judgment cannot authorize an action.
+- `semantic_runtime.py`: two-stage execution. It evaluates active reviewed Choice/Noul/Score judgments, enriches the final action context, filters the Choice to actions whose deterministic preconditions pass, selects a single legal action without a second model call, and refuses a missing legal fallback.
+- `semantic_index.py`: generated SQLite FTS5 search across sources, concepts, relations, question families, judgments, states, actions, surfaces, and evidence.
+- `JudgmentLog`: raw supporting answers in the bundle-free `jev_gate.py` format, so question instruments and final actions can be evaluated independently.
 - `scripts/jev_gate.py calibrate|evaluate`: thresholds and the release gate for any JEV or Laya decision log, with no bundle and no PyYAML. Accepts plain `answer/confidence` or the raw System One answer (`choice`, `noul`, `score`), per-question abstain values, human-labels-only gate, and replays the thresholds on the held-out split to report the automation rate.
 - The calibration rule, metrics and bundle-free gate checks moved into `decision_history.py` (`calibrate_groups`, `log_metrics`, `gate_failures`, `threshold_failures`); `calibrate_thresholds.py` and `evaluate_decisions.py` now call them, with unchanged output.
 - Fix: calibration and the release gate treated a Noul's `no_action_id` as a free fallback even when the question declares a distinct `abstention_action_id`, so "no" was never calibrated and the gate never required a threshold for it. They now use the adapter's rule; a test pins the two implementations together.

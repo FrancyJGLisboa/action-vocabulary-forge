@@ -1,0 +1,92 @@
+schema_version: '1.0'
+system_id: validation_example
+actions:
+- action_id: retry
+  description: Retry the failed validation.
+  aliases:
+  - run validation again
+  choose_when: The failure appears transient and retry budget remains.
+  do_not_choose_when: The failure is semantic, deterministic, or retry budget is exhausted.
+  preconditions:
+  - retry_budget > 0
+  - record_exists == true
+  parameters:
+  - name: record_id
+    type: string
+    required: true
+  outputs:
+  - validation_result
+  side_effects:
+  - starts_validation_run
+  risk: low
+  reversible: true
+  requires_confirmation: false
+  allowed_from_states:
+  - validation_failed
+  destination_states:
+  - validation_pending
+  success_condition: validation_run_started
+  evidence_refs:
+  - runbook_retry
+  - trace_retry_01
+  - trace_failed_01
+  examples:
+  - Transient timeout
+  counterexamples:
+  - Invalid schema
+  binding:
+    kind: python_callable
+    locator: validation_client:retry
+    arg_mapping:
+      record_id: record_id
+    evidence_refs:
+    - binding_retry_call
+- action_id: human_review
+  description: Pause automation and request a human decision.
+  aliases:
+  - manual review
+  - escalate
+  choose_when: The failure is ambiguous or retry is not safe.
+  do_not_choose_when: A deterministic retry policy resolves the failure.
+  preconditions:
+  - unresolved_failure == true
+  parameters:
+  - name: record_id
+    type: string
+    required: true
+  - name: evidence
+    type: object
+    required: false
+  outputs:
+  - review_ticket_id
+  side_effects:
+  - pauses_automation
+  - creates_review_ticket
+  risk: low
+  reversible: true
+  requires_confirmation: false
+  allowed_from_states:
+  - validation_failed
+  destination_states:
+  - awaiting_human_review
+  success_condition: review_ticket_created
+  evidence_refs:
+  - runbook_review
+  - trace_review_01
+  - trace_review_state
+  examples:
+  - Ambiguous schema error
+  counterexamples:
+  - Transient timeout with budget
+  binding:
+    kind: cli
+    locator: review-cli
+    argv:
+    - review-cli
+    - open
+    - --record
+    - '{record_id}'
+    arg_mapping:
+      record_id: record_id
+    evidence_refs:
+    - binding_review_cli
