@@ -51,7 +51,7 @@ class ScannerTriageTests(unittest.TestCase):
     def test_default_scan_has_no_triage(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "sample.py"
-            path.write_text("result = client.responses.create(model='example')\n")
+            path.write_text("from openai import OpenAI\nresult = client.responses.create(model='example')\n")
             result = scanner.scan_file(path, path.parent)
         self.assertEqual(len(result), 1)
         self.assertNotIn("jev_triage", result[0])
@@ -159,7 +159,8 @@ class ScannerCallSiteTests(unittest.TestCase):
 
     def test_javascript_scan_ignores_comments_and_strings(self):
         scanned = self.scan_text(
-            "const endpoint = 'https://api.typesafe.ai/v1/systemone';\n"
+            "import OpenAI from 'openai';\n"
+            "const endpoint = 'https://api.openai.com/v1';\n"
             "// await generateText({ prompt: 'comment' });\n"
             "const documentation = 'client.chat.completions.create()';\n"
             "const result = await generateText({ prompt });\n"
@@ -168,7 +169,7 @@ class ScannerCallSiteTests(unittest.TestCase):
         )
         self.assertEqual(
             [candidate["source_locator"] for candidate, _ in scanned],
-            ["sample.js:4", "sample.js:5"],
+            ["sample.js:5", "sample.js:6"],
         )
 
     def test_non_executable_material_is_not_scanned_for_calls(self):
@@ -179,7 +180,8 @@ class ScannerCallSiteTests(unittest.TestCase):
 
     def test_only_filtered_call_sites_are_sent_to_jev(self):
         scanned = self.scan_text(
-            "DEFAULT_ENDPOINT = 'https://api.typesafe.ai/v1/systemone'\n"
+            "from openai import OpenAI\n"
+            "DEFAULT_ENDPOINT = 'https://api.openai.com/v1'\n"
             "# client.responses.create(model='comment')\n"
             "result = client.responses.create(model='example')\n"
         )
@@ -189,11 +191,11 @@ class ScannerCallSiteTests(unittest.TestCase):
         response = ScannerTriageTests().response()
         scanner.triage_candidates(candidates, windows, lambda payload: payloads.append(payload) or response)
         self.assertEqual(len(payloads), 1)
-        self.assertEqual(payloads[0]["state"]["source_locator"], "sample.py:3")
+        self.assertEqual(payloads[0]["state"]["source_locator"], "sample.py:4")
 
     def test_raw_http_transport_requires_provider_context(self):
         with_provider = self.scan_text(
-            "ENDPOINT = 'https://api.typesafe.ai/v1/systemone'\n"
+            "ENDPOINT = 'https://api.openai.com/v1/responses'\n"
             "request = urllib.request.Request(ENDPOINT, data=payload)\n"
             "response = urllib.request.urlopen(request)\n"
         )

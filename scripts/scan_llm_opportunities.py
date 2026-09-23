@@ -22,8 +22,8 @@ CODE_EXTENSIONS = {
     ".java", ".rb", ".php",
 }
 SKIP_PARTS = {".git", "node_modules", ".venv", "venv", "dist", "build", "__pycache__"}
-PROVIDER_PATTERN = re.compile(
-    r"api[.]typesafe[.]ai|systemone|typesafe|anthropic|claude|openai",
+MODEL_PROVIDER_PATTERN = re.compile(
+    r"api[.]openai[.]com|api[.]anthropic[.]com|anthropic|claude|openai",
     re.IGNORECASE,
 )
 DIRECT_CALL_PATTERN = re.compile(
@@ -107,8 +107,10 @@ def _dotted_name(node: ast.AST) -> str | None:
     return None
 
 
-def _call_signal(name: str, source: str) -> str | None:
+def _call_signal(name: str, source: str, *, raw_context: str | None = None) -> str | None:
     lowered = name.lower()
+    leaf_name = name.rsplit(".", 1)[-1]
+    provider = MODEL_PROVIDER_PATTERN.search(source)
     suffixes = (
         "chat.completions.create", "chat.completions.parse",
         "responses.create", "responses.parse",
@@ -118,20 +120,23 @@ def _call_signal(name: str, source: str) -> str | None:
     )
     for suffix in suffixes:
         if lowered == suffix or lowered.endswith(f".{suffix}"):
-            if suffix.startswith("messages.") and not PROVIDER_PATTERN.search(source):
+            if suffix == "completion" and leaf_name != "completion":
+                continue
+            requires_provider = suffix.startswith(("chat.", "responses.", "messages.")) or suffix == "completion"
+            if requires_provider and not provider:
                 return None
             return suffix
-    provider = PROVIDER_PATTERN.search(source)
     raw_http_suffixes = (
         "urllib.request.urlopen", "urlopen",
         "requests.post", "requests.request",
         "httpx.post", "httpx.request",
         "fetch", "axios.post", "axios.request",
     )
-    if provider:
+    raw_provider = MODEL_PROVIDER_PATTERN.search(raw_context if raw_context is not None else source)
+    if raw_provider:
         for suffix in raw_http_suffixes:
             if lowered == suffix or lowered.endswith(f".{suffix}"):
-                return f"{provider.group(0).lower()}:{suffix}"
+                return f"{raw_provider.group(0).lower()}:{suffix}"
     return None
 
 
@@ -141,14 +146,17 @@ def _python_call_sites(source: str) -> list[tuple[int, str]]:
     except SyntaxError:
         # Precision is more important than guessing whether invalid Python is executable.
         return []
+    lines = source.splitlines()
     sites: dict[int, str] = {}
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         name = _dotted_name(node.func)
-        signal = _call_signal(name, source) if name else None
+        index = node.lineno - 1
+        context = "\n".join(lines[max(0, index - 8):min(len(lines), index + 9)])
+        signal = _call_signal(name, source, raw_context=context) if name else None
         if signal:
-            sites.setdefault(node.lineno - 1, signal)
+            sites.setdefault(index, signal)
     return sorted(sites.items())
 
 
@@ -205,7 +213,8 @@ def _generic_call_sites(lines: list[str], source: str) -> list[tuple[int, str]]:
     sites: dict[int, str] = {}
     for index, line in enumerate(_mask_non_code(lines)):
         for match in DIRECT_CALL_PATTERN.finditer(line):
-            signal = _call_signal(match.group("call"), source)
+            context = "\n".join(lines[max(0, index - 8):min(len(lines), index + 9)])
+            signal = _call_signal(match.group("call"), source, raw_context=context)
             if signal:
                 sites.setdefault(index, signal)
     return sorted(sites.items())

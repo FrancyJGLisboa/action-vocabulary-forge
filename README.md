@@ -147,6 +147,7 @@ scripts/init_semantic_bundle.py     semantic front end plus the compatible Actio
 scripts/discover_decision_system.py material + resolved cases -> ranked candidates + safe bundle
 scripts/evaluate_discovered_system.py candidate Choice -> measured shadow holdout, no execution
 scripts/scan_llm_opportunities.py   heuristic scan for classifier-replaceable generative calls
+scripts/evaluate_llm_opportunity_scanner.py frozen exact-line precision/recall gate for the scanner
 scripts/validate_action_bundle.py   structural and safety checks
 scripts/validate_semantic_bundle.py semantic provenance, judgment and cross-link checks
 scripts/semantic_index.py           SQLite FTS index over the compiled vocabulary
@@ -209,5 +210,19 @@ Only this opt-in sends source windows to TypeSafe; windows are not persisted in 
 
 The scanner filters before any JEV request: Python candidates must be AST-confirmed
 calls, other supported code files are scanned with comments and strings masked, and
-documentation/data files are ignored. Raw HTTP calls qualify only when the same file
-contains a recognized AI-provider signal.
+documentation/data files are ignored. Raw HTTP calls qualify only when their local
+source window contains a recognized model-provider signal. Existing TypeSafe/System
+One transport infrastructure is not a replacement opportunity.
+
+Run the offline discovery gate before changing scanner rules:
+
+```sh
+python3 scripts/evaluate_llm_opportunity_scanner.py
+```
+
+The frozen fixture set labels exact call-site lines as `replaceable_decision`,
+`open_ended_generation`, `provider_infrastructure`, or `not_ai`. The gate requires
+at least 90% precision and 80% recall; its test also refuses any known fixture error.
+The set combines synthetic boundaries with pinned, reviewed public-code snippets.
+It prevents known regressions but does not establish broad real-repository accuracy;
+add more reviewed external cases before changing thresholds or supported call forms.

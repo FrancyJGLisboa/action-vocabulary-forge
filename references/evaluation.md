@@ -45,6 +45,25 @@ Use a system-specific threshold, but do not release a surface with:
 
 Record failures in coverage_report.md and keep the surface out of production until reviewed.
 
+## Pre-JEV opportunity scanner gate
+
+`scripts/evaluate_llm_opportunity_scanner.py` evaluates the static scanner before
+any source window can be sent to JEV. Its frozen YAML fixtures contain exact expected
+call-site lines and four labels:
+
+- `replaceable_decision` and `open_ended_generation` are eligible for JEV triage;
+- `provider_infrastructure` and `not_ai` must be excluded locally.
+
+The report counts exact-line true positives, false positives, and false negatives.
+The default gate requires precision of at least 0.90 and recall of at least 0.80 and
+exits 2 on hold. The unit test is stricter for the checked-in fixtures: no known false
+positive or false negative may remain. The frozen set combines synthetic boundaries
+with pinned, reviewed public-code snippets, but remains a regression baseline rather
+than evidence of broad real-world accuracy. Add more reviewed external-repository
+cases before thresholds or supported call patterns change.
+
+    python3 scripts/evaluate_llm_opportunity_scanner.py
+
 ## Decision log
 
 The generated adapter writes one JSONL record per decision or execution attempt (`DecisionLog`, or set `FORGE_DECISION_LOG`). Fields: `timestamp, system_id, question_id, surface_id, case_id, state_id, selected_choice, proposed_action_id` (before policy), `action_id` (after policy), `confidence, probabilities, threshold, abstained, decided_by, reason, legal_actions, executed, outcome, blocked_reason, result_summary, handler_status, model, latency_ms, usage, ground_truth_action_id, label_source`. Labels can be written inline as `ground_truth_action_id` or supplied separately as JSONL/CSV rows with `case_id, question_id, ground_truth_action_id` and an optional `label_source`. A label without a source counts as `human`; a machine labeler must write its own source (e.g. `llm`). Calibration uses every source; the release gate is judged on `human` labels only, and machine-labeled held-out records are counted as `excluded_machine_labeled`.

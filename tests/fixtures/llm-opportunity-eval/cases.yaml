@@ -1,0 +1,277 @@
+schema_version: "1.0"
+description: >-
+  Frozen synthetic and reviewed public-code fixtures for the offline pre-JEV
+  discovery gate. Expected lines are executable generative calls eligible for
+  semantic triage.
+cases:
+  - case_id: py_openai_responses_choice
+    filename: sample.py
+    label: replaceable_decision
+    expected_lines: [4]
+    source: |
+      from openai import OpenAI
+      client = OpenAI()
+      options = ["approve", "reject", "review"]
+      response = client.responses.create(model="gpt-test", input=f"Choose one: {options}")
+
+  - case_id: py_openai_chat_route
+    filename: sample.py
+    label: replaceable_decision
+    expected_lines: [4]
+    source: |
+      from openai import OpenAI
+      client = OpenAI()
+      routes = ["sales", "support", "billing"]
+      answer = client.chat.completions.create(model="gpt-test", messages=[])
+
+  - case_id: py_anthropic_messages_choice
+    filename: sample.py
+    label: replaceable_decision
+    expected_lines: [3]
+    source: |
+      from anthropic import Anthropic
+      client = Anthropic()
+      answer = client.messages.create(model="claude-test", messages=[])
+
+  - case_id: py_langchain_llm_route
+    filename: sample.py
+    label: replaceable_decision
+    expected_lines: [3]
+    source: |
+      from langchain_openai import ChatOpenAI
+      llm = ChatOpenAI()
+      route = llm.invoke("Choose sales, support, or billing")
+
+  - case_id: py_langchain_model_score
+    filename: sample.py
+    label: replaceable_decision
+    expected_lines: [3]
+    source: |
+      from langchain_openai import ChatOpenAI
+      model = ChatOpenAI()
+      score = model.invoke("Score urgency from 0 to 3")
+
+  - case_id: js_vercel_generate_text_triage
+    filename: sample.js
+    label: replaceable_decision
+    expected_lines: [2]
+    source: |
+      import { generateText } from "ai";
+      const result = await generateText({ model, prompt: "Choose retry, escalate, or stop" });
+
+  - case_id: ts_openai_responses_category
+    filename: sample.ts
+    label: replaceable_decision
+    expected_lines: [3]
+    source: |
+      import OpenAI from "openai";
+      const client = new OpenAI();
+      const result = await client.responses.create({ model: "gpt-test", input });
+
+  - case_id: js_openai_chat_approval
+    filename: sample.js
+    label: replaceable_decision
+    expected_lines: [3]
+    source: |
+      import OpenAI from "openai";
+      const client = new OpenAI();
+      const result = await client.chat.completions.create({ model: "gpt-test", messages });
+
+  - case_id: py_openai_responses_essay
+    filename: sample.py
+    label: open_ended_generation
+    expected_lines: [3]
+    source: |
+      from openai import OpenAI
+      client = OpenAI()
+      essay = client.responses.create(model="gpt-test", input="Write an essay")
+
+  - case_id: js_vercel_generate_blog
+    filename: sample.js
+    label: open_ended_generation
+    expected_lines: [2]
+    source: |
+      import { generateText } from "ai";
+      const post = await generateText({ model, prompt: "Write a long blog post" });
+
+  - case_id: py_openai_chat_summary
+    filename: sample.py
+    label: open_ended_generation
+    expected_lines: [3]
+    source: |
+      from openai import OpenAI
+      client = OpenAI()
+      summary = client.chat.completions.create(model="gpt-test", messages=[])
+
+  - case_id: ts_anthropic_email
+    filename: sample.ts
+    label: open_ended_generation
+    expected_lines: [3]
+    source: |
+      import Anthropic from "@anthropic-ai/sdk";
+      const client = new Anthropic();
+      const email = await client.messages.create({ model: "claude-test", messages });
+
+  - case_id: py_llm_brainstorm
+    filename: sample.py
+    label: open_ended_generation
+    expected_lines: [2]
+    source: |
+      llm = build_llm()
+      ideas = llm.invoke("Brainstorm twenty campaign ideas")
+
+  - case_id: js_generate_story
+    filename: sample.js
+    label: open_ended_generation
+    expected_lines: [2]
+    source: |
+      import { generateText } from "ai";
+      const story = await generateText({ model, prompt: "Write a story" });
+
+  - case_id: py_typesafe_urllib_transport
+    filename: sample.py
+    label: provider_infrastructure
+    expected_lines: []
+    source: |
+      import urllib.request
+      ENDPOINT = "https://api.typesafe.ai/v1/systemone"
+      request = urllib.request.Request(ENDPOINT, data=payload)
+      response = urllib.request.urlopen(request)
+
+  - case_id: js_typesafe_fetch_transport
+    filename: sample.js
+    label: provider_infrastructure
+    expected_lines: []
+    source: |
+      const endpoint = "https://api.typesafe.ai/v1/systemone";
+      const response = await fetch(endpoint, { method: "POST", body: payload });
+
+  - case_id: py_systemone_httpx_transport
+    filename: sample.py
+    label: provider_infrastructure
+    expected_lines: []
+    source: |
+      import httpx
+      SYSTEMONE_URL = "https://example.invalid/systemone"
+      response = httpx.post(SYSTEMONE_URL, json=payload)
+
+  - case_id: py_openai_client_configuration
+    filename: sample.py
+    label: provider_infrastructure
+    expected_lines: []
+    source: |
+      from openai import OpenAI
+      OPENAI_BASE_URL = "https://api.openai.com/v1"
+      client = OpenAI(base_url=OPENAI_BASE_URL)
+
+  - case_id: py_mixed_provider_unrelated_transport
+    filename: sample.py
+    label: provider_infrastructure
+    expected_lines: []
+    source: |
+      from openai import OpenAI
+      openai_client = OpenAI()
+      padding_1 = None
+      padding_2 = None
+      padding_3 = None
+      padding_4 = None
+      padding_5 = None
+      padding_6 = None
+      padding_7 = None
+      padding_8 = None
+      padding_9 = None
+      padding_10 = None
+      TYPESAFE_ENDPOINT = "https://api.typesafe.ai/v1/systemone"
+      request = urllib.request.Request(TYPESAFE_ENDPOINT, data=payload)
+      response = urllib.request.urlopen(request)
+
+  - case_id: py_janus_provider_call_and_result_constructor
+    filename: sample.py
+    label: replaceable_decision
+    expected_lines: [4]
+    source_reference: https://github.com/FirasSX914/Janus/blob/9cb66c488cf884e5997356a0de45f75aa3148774/experiments/providers.py
+    source: |
+      from openai import OpenAI
+      client = OpenAI()
+      tools = [{"type": "function"}]
+      response = client.chat.completions.create(model="deepseek-test", tools=tools)
+      result = Completion(prediction=response.choices[0].message.content)
+
+  - case_id: py_comment_only
+    filename: sample.py
+    label: not_ai
+    expected_lines: []
+    source: |
+      # client.responses.create(model="gpt-test", input="not executable")
+      value = 1
+
+  - case_id: py_string_only
+    filename: sample.py
+    label: not_ai
+    expected_lines: []
+    source: |
+      documentation = "client.responses.create(model='gpt-test')"
+      value = 1
+
+  - case_id: py_regex_only
+    filename: sample.py
+    label: not_ai
+    expected_lines: []
+    source: |
+      import re
+      pattern = re.compile(r"responses[.]create[(]")
+
+  - case_id: py_ordinary_http
+    filename: sample.py
+    label: not_ai
+    expected_lines: []
+    source: |
+      import urllib.request
+      request = urllib.request.Request("https://example.com/health")
+      response = urllib.request.urlopen(request)
+
+  - case_id: py_unrelated_responses_api
+    filename: sample.py
+    label: not_ai
+    expected_lines: []
+    source: |
+      client = SurveyClient()
+      record = client.responses.create(form_id="quarterly")
+
+  - case_id: markdown_example
+    filename: sample.md
+    label: not_ai
+    expected_lines: []
+    source: |
+      Call `client.responses.create()` to generate a response.
+
+  - case_id: json_configuration
+    filename: sample.json
+    label: not_ai
+    expected_lines: []
+    source: |
+      {"example": "client.responses.create()", "enabled": false}
+
+  - case_id: py_deterministic_selection
+    filename: sample.py
+    label: not_ai
+    expected_lines: []
+    source: |
+      options = ["approve", "reject"]
+      result = options[0] if score >= 0.8 else options[1]
+
+  - case_id: js_comment_only
+    filename: sample.js
+    label: not_ai
+    expected_lines: []
+    source: |
+      // const result = await generateText({ prompt });
+      const value = 1;
+
+  - case_id: js_string_only
+    filename: sample.js
+    label: not_ai
+    expected_lines: []
+    source: |
+      const documentation = "client.chat.completions.create()";
+      const value = 1;
