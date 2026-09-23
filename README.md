@@ -197,3 +197,17 @@ python3 scripts/evaluate_decisions.py /tmp/forge/bundle --log /tmp/forge/decisio
 generated from their matching `init_*_bundle.py --example` scripts. Edit the
 initializer and regenerate with `--force`. The pre-commit hook runs the tests,
 validates both examples, and refuses drift. The references are hand-written.
+# Optional JEV opportunity triage
+
+Set `TYPESAFE_API_KEY` and opt in explicitly:
+
+```sh
+TYPESAFE_API_KEY=... python3 scripts/scan_llm_opportunities.py src/ --jev-triage --output opportunities.yml
+```
+
+Only this opt-in sends source windows to TypeSafe; windows are not persisted in the YAML output. Every triaged result remains a review-only `candidate`.
+
+The scanner filters before any JEV request: Python candidates must be AST-confirmed
+calls, other supported code files are scanned with comments and strings masked, and
+documentation/data files are ignored. Raw HTTP calls qualify only when the same file
+contains a recognized AI-provider signal.
