@@ -1,0 +1,73 @@
+schema_version: "1.0"
+system_id: pydantic_ai_contribution_work
+nodes:
+  - node_id: contributor
+    kind: actor
+    label: Contributor
+    evidence: [{source_id: contributing, status: declared, quote: "Want to help build a feature?"}]
+  - node_id: maintainer
+    kind: actor
+    label: Maintainer
+    evidence: [{source_id: contributing, status: declared, quote: "Only a human maintainer's review counts."}]
+  - node_id: automation
+    kind: actor
+    label: Automation
+    evidence: [{source_id: attention_workflow, status: declared, quote: "automation"}]
+  - node_id: issue
+    kind: artifact
+    label: Issue
+    evidence: [{source_id: contributing, status: declared, quote: "Open an issue"}, {source_id: history, status: observed, quote: "issue-8717-pr-8730"}]
+  - node_id: pull_request
+    kind: artifact
+    label: Pull request
+    evidence: [{source_id: contributing, status: declared, quote: "Then open a PR."}, {source_id: history, status: observed, quote: "pull_request_merged"}]
+  - node_id: attention_needed
+    kind: state
+    label: A work item may need a maintainer decision
+    evidence: [{source_id: attention_workflow, status: declared, quote: "may need a maintainer decision"}]
+  - node_id: open_issue
+    kind: activity
+    label: Open and describe an issue
+    evidence: [{source_id: contributing, status: declared, quote: "Describe the problem, not just the solution."}]
+  - node_id: align_approach
+    kind: activity
+    label: Align approach with a maintainer
+    evidence: [{source_id: contributing, status: declared, quote: "Wait for assignment."}]
+  - node_id: choose_next_actor
+    kind: decision
+    label: Decide who must act next
+    candidate_actions: [maintainer, contributor, automation, none, uncertain]
+    evidence: [{source_id: attention_workflow, status: declared, quote: "Who must take the next meaningful action"}]
+  - node_id: automated_review
+    kind: activity
+    label: Run advisory automated review
+    evidence: [{source_id: contributing, status: declared, quote: "These reviews are advisory"}]
+  - node_id: human_review
+    kind: decision
+    label: Human maintainer reviews the change
+    candidate_actions: [approve, request_changes, close]
+    evidence: [{source_id: contributing, status: declared, quote: "Only a human maintainer's review counts."}, {source_id: history, status: observed, quote: "human_review_approved"}]
+  - node_id: merged_change
+    kind: outcome
+    label: Pull request merged and issue completed
+    evidence: [{source_id: history, status: observed, quote: "issue_completed"}]
+links:
+  - {from: contributor, relation: creates, to: issue, status: declared, evidence: [{source_id: contributing, quote: "Open an issue"}]}
+  - {from: issue, relation: precedes, to: align_approach, status: declared, evidence: [{source_id: contributing, quote: "Wait for assignment."}]}
+  - {from: align_approach, relation: enables, to: pull_request, status: declared, evidence: [{source_id: contributing, quote: "Then open a PR."}]}
+  - {from: attention_needed, relation: activates, to: choose_next_actor, status: declared, evidence: [{source_id: attention_workflow, quote: "next meaningful action"}]}
+  - {from: pull_request, relation: evaluated_by, to: automated_review, status: declared, evidence: [{source_id: contributing, quote: "automatically reviewed"}]}
+  - {from: pull_request, relation: evaluated_by, to: human_review, status: observed, evidence: [{source_id: history, quote: "human_review_approved"}]}
+  - {from: human_review, relation: leads_to, to: merged_change, status: observed, evidence: [{source_id: history, quote: "pull_request_merged"}]}
+workflows:
+  - workflow_id: issue_to_merged_change
+    label: Issue to reviewed merged change
+    steps: [open_issue, align_approach, pull_request, automated_review, human_review, merged_change]
+    actor_ids: [contributor, maintainer, automation]
+    artifact_ids: [issue, pull_request]
+    decision_ids: [choose_next_actor, human_review]
+    source_ids: [contributing, attention_workflow, history]
+    repeated_case_count: 3
+    gaps:
+      - Public records do not expose the maintainers' private prioritization reasoning.
+      - The sample does not prove every merged PR followed the declared pre-alignment policy.

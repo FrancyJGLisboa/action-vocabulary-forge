@@ -1,4 +1,6 @@
 interface:
   display_name: "Decision System Forge"
-  short_description: "Compile evidence into JEV decision systems"
-  default_prompt: "Use $decision-system-forge to discover valuable bounded decisions from this material and resolved work, then compile the safest evidence-backed candidate into JEV judgments, legal actions, and an evaluated runtime."
+  short_description: "Discover hidden decisions and compile safe JEV systems"
+  default_prompt: "Use $decision-system-forge through its canonical start, inspect, and continue journey. Take the supplied repositories, URLs, paths, documents, workflows, traces, and resolved cases directly; never ask me to author internal Forge YAML. Follow product_lifecycle.yaml, stop at evidence or human-review gates, and use advanced compiler commands only when the canonical guidance and required inputs permit them. Never let a semantic judgment authorize an action, invent a binding, automate approval, expose secrets or private state, or grant production authority."
+policy:
+  allow_implicit_invocation: true

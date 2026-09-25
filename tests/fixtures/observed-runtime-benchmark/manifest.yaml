@@ -1,0 +1,86 @@
+schema_version: "1.0"
+benchmark_id: observed-runtime-benchmark-v1
+description: >-
+  Frozen, offline evidence that bounded agent decisions observed during real
+  public-repository executions compile into privacy-safe Forge workflow maps.
+thresholds:
+  minimum_runtimes: 2
+  minimum_repositories: 2
+  minimum_runtime_events: 3
+  minimum_repeated_path_cases: 2
+runtimes:
+  - runtime_id: openai-agents-python
+    repository: https://github.com/openai/openai-agents-python
+    commit: 74636ac9b9c5b7fe9e2e4ca62daff59248769c02
+    license: MIT
+    license_url: https://github.com/openai/openai-agents-python/blob/74636ac9b9c5b7fe9e2e4ca62daff59248769c02/LICENSE
+    source_snapshot_unmodified: true
+    no_paid_model_calls: true
+    baseline:
+      command: >-
+        uv run --no-dev --with pytest --with pytest-asyncio pytest -q
+        tests/test_run_hooks.py -k count_tool_and_handoff_invocations
+      status: passed
+      result: 2 passed, 13 deselected
+    capture:
+      method: public_lifecycle_hook
+      source_locator: src/agents/lifecycle.py:74-81
+      source_url: https://github.com/openai/openai-agents-python/blob/74636ac9b9c5b7fe9e2e4ca62daff59248769c02/src/agents/lifecycle.py#L74-L81
+      command: uv run --no-dev python {capture_script} --output {output}
+      result: captured 4 handoff events across 2 cases
+      adapter_file: openai-agents-python/capture.py
+      adapter_sha256: ab4e1b323e741102c57d74c2cd667aaebccc50e0953e960de08436a8febdaac2
+      event_file: openai-agents-python/events.jsonl
+      event_sha256: 0441ef99ab7076b558a273ad3b9b3a0c251093ae99b921e51e181f8577210ee4
+      source_ref_prefix: "openai-agents-python:"
+    opportunity:
+      opportunity_id: agent_handoff_route
+      actor_type: agent
+      candidate_actions: [closer, human, knowledge, refund]
+      discovery_evidence: Agent handoff lists expose a bounded next-agent route.
+    expected:
+      minimum_events: 4
+      minimum_cases: 2
+      minimum_repeated_paths: 1
+
+  - runtime_id: vajra
+    repository: https://github.com/zamana-inc/vajra
+    commit: 0437bff9af3750c9e175df1bde3103fb9885d3d1
+    license: MIT
+    license_url: https://github.com/zamana-inc/vajra/blob/0437bff9af3750c9e175df1bde3103fb9885d3d1/LICENSE
+    source_snapshot_unmodified: true
+    no_paid_model_calls: true
+    baseline:
+      command: >-
+        bun test orchestrator/tests/pipeline.test.ts --test-name-pattern
+        'routes by on_label|thread-bound stages start|wait_human'
+      status: passed
+      result: 3 passed, 29 filtered out
+    capture:
+      method: opt_in_local_adapter_on_separate_worktree
+      source_locator: orchestrator/src/pipeline.ts:620-652
+      source_url: https://github.com/zamana-inc/vajra/blob/0437bff9af3750c9e175df1bde3103fb9885d3d1/orchestrator/src/pipeline.ts#L620-L652
+      command: >-
+        FORGE_OBSERVATION_LOG={output} bun test
+        orchestrator/tests/pipeline.test.ts --test-name-pattern
+        'routes by on_label|thread-bound stages start|wait_human'
+      setup_commands:
+        - cp {adapter_file} orchestrator/src/forge-observation.ts
+        - git apply {integration_patch_file}
+      result: 3 passed; captured 4 plan-review events across 3 cases
+      adapter_file: vajra/forge-observation.ts
+      adapter_sha256: 94ea7e32e8c41f5ee1f716a1078c4315c8407dfb063b9a338a909aec881f4716
+      integration_patch_file: vajra/pipeline-integration.patch
+      integration_patch_sha256: 72ecc72b4e04c6e7c2c9f1d299fe92a0ca90937cc3441a2459a3657aa91bebf2
+      event_file: vajra/events.jsonl
+      event_sha256: 612fcdd4041b0793768f2e28688b6277bbdb1009b56de8acd660ac835d0e0a5e
+      source_ref_prefix: "vajra:"
+    opportunity:
+      opportunity_id: plan_review_outcome
+      actor_type: agent
+      candidate_actions: [escalate, lgtm, revise]
+      discovery_evidence: Conditional on_label edges expose bounded review outcomes.
+    expected:
+      minimum_events: 4
+      minimum_cases: 3
+      minimum_repeated_paths: 0

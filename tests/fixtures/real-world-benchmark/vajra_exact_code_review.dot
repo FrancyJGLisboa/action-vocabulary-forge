@@ -1,0 +1,3 @@
+  review_code -> prepare_pr [on_label="lgtm"]
+  review_code -> fix_code [on_label="revise"]
+  review_code -> escalate [on_label="escalate"]

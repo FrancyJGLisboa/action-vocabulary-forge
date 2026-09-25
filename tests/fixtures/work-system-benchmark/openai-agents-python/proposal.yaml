@@ -1,0 +1,78 @@
+schema_version: "1.0"
+system_id: openai_agents_contribution_work
+nodes:
+  - node_id: reporter
+    kind: actor
+    label: Public reporter
+    evidence: [{source_id: contributing, status: declared, quote: "bug reports"}]
+  - node_id: collaborator
+    kind: actor
+    label: Repository collaborator
+    evidence: [{source_id: contributing, status: declared, quote: "Pull requests are limited to repository collaborators."}]
+  - node_id: maintainer
+    kind: actor
+    label: Maintainer or code owner
+    evidence: [{source_id: contributing, status: declared, quote: "required code-owner review"}]
+  - node_id: issue
+    kind: artifact
+    label: Public issue
+    evidence: [{source_id: contributing, status: declared, quote: "GitHub issues"}, {source_id: history, status: observed, quote: "issue-5160-pr-5163"}]
+  - node_id: pull_request
+    kind: artifact
+    label: Collaborator pull request
+    evidence: [{source_id: pr_template, status: declared, quote: "Issue number"}, {source_id: history, status: observed, quote: "pull_request_linked"}]
+  - node_id: inactive_item
+    kind: state
+    label: Issue or pull request is inactive long enough for stale policy
+    evidence: [{source_id: issues_workflow, status: declared, quote: "days-before-issue-stale"}]
+  - node_id: choose_contribution_channel
+    kind: decision
+    label: Choose the allowed contribution channel
+    candidate_actions: [public_issue, collaborator_pull_request, private_security_report]
+    evidence: [{source_id: contributing, status: declared, quote: "Report suspected security vulnerabilities privately"}]
+  - node_id: open_issue
+    kind: activity
+    label: Open public issue with reproduction
+    evidence: [{source_id: contributing, status: declared, quote: "minimal reproductions"}]
+  - node_id: prepare_change
+    kind: activity
+    label: Implement focused change and regression coverage
+    evidence: [{source_id: contributing, status: declared, quote: "Add regression coverage"}]
+  - node_id: verify_change
+    kind: activity
+    label: Run checks and document the test plan
+    evidence: [{source_id: pr_template, status: declared, quote: "Please explain how this was tested"}]
+  - node_id: human_review
+    kind: decision
+    label: Human review of pull request
+    candidate_actions: [approve, request_changes, close]
+    evidence: [{source_id: history, status: observed, quote: "human_review_approved"}]
+  - node_id: stale_item_policy
+    kind: decision
+    label: Apply inactive-item policy
+    candidate_actions: [mark_stale, close, skip_stale]
+    evidence: [{source_id: issues_workflow, status: declared, quote: "days-before-issue-close"}]
+  - node_id: merged_change
+    kind: outcome
+    label: Reviewed pull request merged and issue completed
+    evidence: [{source_id: history, status: observed, quote: "issue_completed"}]
+links:
+  - {from: reporter, relation: creates, to: issue, status: declared, evidence: [{source_id: contributing, quote: "GitHub issues"}]}
+  - {from: issue, relation: precedes, to: prepare_change, status: observed, evidence: [{source_id: history, quote: "pull_request_linked"}]}
+  - {from: collaborator, relation: creates, to: pull_request, status: declared, evidence: [{source_id: contributing, quote: "Pull requests are limited"}]}
+  - {from: pull_request, relation: requires, to: verify_change, status: declared, evidence: [{source_id: pr_template, quote: "Test plan"}]}
+  - {from: pull_request, relation: evaluated_by, to: human_review, status: observed, evidence: [{source_id: history, quote: "human_review_approved"}]}
+  - {from: human_review, relation: leads_to, to: merged_change, status: observed, evidence: [{source_id: history, quote: "pull_request_merged"}]}
+  - {from: inactive_item, relation: activates, to: stale_item_policy, status: declared, evidence: [{source_id: issues_workflow, quote: "days-before-issue-close"}]}
+workflows:
+  - workflow_id: public_issue_to_merged_fix
+    label: Public issue to reviewed merged fix
+    steps: [choose_contribution_channel, open_issue, prepare_change, pull_request, verify_change, human_review, merged_change]
+    actor_ids: [reporter, collaborator, maintainer]
+    artifact_ids: [issue, pull_request]
+    decision_ids: [choose_contribution_channel, human_review]
+    source_ids: [contributing, pr_template, history]
+    repeated_case_count: 3
+    gaps:
+      - Public records do not reveal why some completed issues have no linked pull request.
+      - The sample does not prove required checks passed or that every merge had code-owner review.

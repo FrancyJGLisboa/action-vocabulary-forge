@@ -1,0 +1,5 @@
+digraph workflow {
+  review -> approved [on_label="lgtm"];
+  review -> planning [on_label="revise"];
+  review -> human [on_label="escalate"];
+}

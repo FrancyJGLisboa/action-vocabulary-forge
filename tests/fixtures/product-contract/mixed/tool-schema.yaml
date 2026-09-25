@@ -1,0 +1,6 @@
+name: case_dispatch
+input:
+  state: object
+output:
+  action:
+    enum: [send, request_information, escalate]

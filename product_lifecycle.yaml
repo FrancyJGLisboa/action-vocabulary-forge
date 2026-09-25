@@ -1,0 +1,209 @@
+schema_version: "1.0"
+name: decision-system-forge
+purpose: >-
+  Reconstruct a work system from supplied evidence, identify a repeated bounded
+  decision, and measure a justified JEV shadow workflow without execution authority.
+
+public_commands:
+  start: Route raw evidence or resolved cases into the appropriate proven compiler.
+  inspect: Show persisted evidence plus canonical stage guidance.
+  continue: Explain the next safe handoff without mutating the project.
+  status: Show the compact persisted project status.
+
+entry_paths:
+  work_system:
+    command: start
+    route: reconstruct
+    evidence: [repo, url, source]
+    initial_stages: [evidence_inventoried]
+  resolved_cases:
+    command: start
+    route: discover
+    evidence: [cases, source]
+    initial_stages: [awaiting_review, insufficient_evidence]
+  agentic_runtime:
+    command: start
+    route: reconstruct
+    evidence: [repo, source, url]
+    initial_stages: [evidence_inventoried]
+  hypothesis_scan_advanced:
+    command: scan
+    route: scan
+    evidence: [source]
+    initial_stages: [hypotheses_ready, no_opportunities]
+
+stages:
+  no_opportunities:
+    manifest_next_actions: [add_operational_material]
+    transitions:
+      - {to: no_opportunities, via: scan --force}
+      - {to: hypotheses_ready, via: scan --force}
+    guidance:
+      action_id: add_operational_material
+      summary: Add operating material that contains observable rules, choices, traces, or outcomes.
+      required_inputs: [additional_operational_material]
+      command: null
+      automatic: false
+
+  hypotheses_ready:
+    manifest_next_actions: [select_candidate_for_instrumentation]
+    transitions:
+      - {to: instrumentation_ready, via: select}
+    guidance:
+      action_id: select_candidate_for_instrumentation
+      summary: Review the source-backed hypotheses and select one bounded semantic decision for observation.
+      required_inputs: [reviewed_opportunity_id]
+      command: null
+      automatic: false
+
+  instrumentation_ready:
+    manifest_next_actions: [collect_observations]
+    transitions:
+      - {to: observations_collected, via: observe}
+      - {to: workflow_map_ready, via: observe}
+    guidance:
+      action_id: collect_observations
+      summary: Collect cumulative decision events outside the Forge project using the generated schema.
+      required_inputs: [external_decision_events_jsonl]
+      command: null
+      automatic: false
+
+  observations_collected:
+    manifest_next_actions: [collect_more_observations]
+    transitions:
+      - {to: observations_collected, via: observe}
+      - {to: workflow_map_ready, via: observe}
+    guidance:
+      action_id: collect_more_observations
+      summary: Add independent cases until a repeated path is supported.
+      required_inputs: [expanded_external_decision_events_jsonl]
+      command: null
+      automatic: false
+
+  workflow_map_ready:
+    manifest_next_actions: [review_decision_system_map]
+    transitions:
+      - {to: workflow_map_ready, via: observe}
+    guidance:
+      action_id: review_decision_system_map
+      summary: Review the descriptive recurring path before proposing a bounded decision system.
+      required_inputs: [domain_review]
+      command: null
+      automatic: false
+
+  insufficient_evidence:
+    manifest_next_actions: [add_evidence_and_rediscover]
+    transitions:
+      - {to: insufficient_evidence, via: start --force}
+      - {to: awaiting_review, via: start --force}
+    guidance:
+      action_id: add_evidence_and_rediscover
+      summary: Add representative resolved cases or repair their field mapping, then restart discovery.
+      required_inputs: [additional_resolved_cases]
+      command: null
+      automatic: false
+
+  awaiting_review:
+    manifest_next_actions: [review_candidate]
+    transitions:
+      - {to: ready_for_shadow, via: approve-shadow}
+    guidance:
+      action_id: review_candidate
+      summary: A named domain owner must review the vocabulary and historical labels before shadow evaluation.
+      required_inputs: [named_reviewer, reviewed_surface_id]
+      command: null
+      automatic: false
+
+  ready_for_shadow:
+    manifest_next_actions: [run_shadow]
+    transitions:
+      - {to: shadow_measured, via: shadow}
+    guidance:
+      action_id: run_shadow
+      summary: Measure the approved candidate without executing downstream actions.
+      required_inputs: [TYPESAFE_API_KEY]
+      command: python3 scripts/forge.py shadow {project}
+      automatic: false
+
+  shadow_measured:
+    manifest_next_actions: [verify_labels_and_calibrate, calibrate_and_run_release_gate]
+    transitions: []
+    guidance:
+      action_id: verify_labels_and_calibrate
+      summary: Obtain trusted labels and calibrate the exact question, state builder, and model before any release decision.
+      required_inputs: [trusted_human_labels]
+      command: null
+      automatic: false
+
+  evidence_inventoried:
+    manifest_next_actions: [complete_system2_reconstruction]
+    transitions:
+      - {to: work_system_mapped, via: reconstruct --proposal}
+    guidance:
+      action_id: complete_system2_reconstruction
+      summary: System 2 must connect the immutable evidence using exact citations; the compiler will validate every claim.
+      required_inputs: [work_system_proposal]
+      command: python3 scripts/forge.py reconstruct --project {project} --proposal {project}/work_system_proposal.yaml
+      automatic: false
+
+  work_system_mapped:
+    manifest_next_actions: [review_decision_opportunities]
+    transitions:
+      - {to: integration_planned, via: prepare-integration}
+    guidance:
+      action_id: review_decision_opportunities
+      summary: Review the mapped decisions and compile a non-executing integration contract for the selected scope.
+      required_inputs: [reviewed_decision_scope]
+      command: python3 scripts/forge.py prepare-integration {project}
+      automatic: false
+
+  integration_planned:
+    manifest_next_actions: [implement_and_verify_integration_contracts]
+    transitions:
+      - {to: binding_candidates_ready, via: propose-bindings}
+    guidance:
+      action_id: implement_and_verify_integration_contracts
+      summary: An implementation agent may propose typed bindings backed by exact source evidence; the Forge will not invoke them.
+      required_inputs: [binding_proposal]
+      command: null
+      automatic: false
+
+  binding_candidates_ready:
+    manifest_next_actions: [run_candidates_in_controlled_host_and_emit_binding_observations]
+    transitions:
+      - {to: bindings_verified_for_shadow, via: verify-bindings}
+    guidance:
+      action_id: run_candidates_in_controlled_host_and_emit_binding_observations
+      summary: A controlled host must produce success and safe-negative fingerprints for each candidate binding.
+      required_inputs: [controlled_host_binding_observations]
+      command: null
+      automatic: false
+
+  bindings_verified_for_shadow:
+    manifest_next_actions: [implement_and_verify_state_legality_controller_and_bounded_loop]
+    transitions:
+      - {to: shadow_controller_ready, via: prepare-controller}
+    guidance:
+      action_id: implement_and_verify_state_legality_controller_and_bounded_loop
+      summary: Provide reviewed observable states, deterministic legality, fallback, confidence, and finite-loop policy.
+      required_inputs: [controller_proposal]
+      command: null
+      automatic: false
+
+  shadow_controller_ready:
+    manifest_next_actions: [run_shadow_controller_and_collect_trusted_labels]
+    transitions:
+      - {to: shadow_controller_ready, via: run-controller-shadow}
+    guidance:
+      action_id: run_shadow_controller_and_collect_trusted_labels
+      summary: Run the controller with JEV in shadow and collect trusted labels; bindings remain non-executable.
+      required_inputs: [observable_states_jsonl, TYPESAFE_API_KEY]
+      command: null
+      automatic: false
+
+safety:
+  - semantic_judgment_never_authorizes_action
+  - no_invented_bindings
+  - no_auto_approval
+  - zero_production_authority
+  - no_secrets_or_raw_private_state_in_receipts

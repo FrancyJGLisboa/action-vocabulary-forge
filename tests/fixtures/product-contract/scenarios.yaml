@@ -1,0 +1,108 @@
+schema_version: "1.0"
+required_archetypes:
+  - source_code
+  - agentic_workflow
+  - documents_only
+  - mixed_material
+  - expensive_llm_call
+  - resolved_history
+scenarios:
+  - scenario_id: python_agent_cold_start
+    archetype: source_code
+    mode: cold_scan
+    system_id: research_agent
+    sources:
+      - examples/cold-start-agent
+    expected:
+      stage: hypotheses_ready
+      opportunity_ids:
+        - choose_next_research_step
+        - draft_final_answer
+        - max_retries
+      opportunity_types:
+        - bounded_semantic_decision
+        - deterministic_rule
+        - open_generation
+
+  - scenario_id: typescript_dot_agentic_workflow
+    archetype: agentic_workflow
+    mode: cold_scan_and_select
+    system_id: agentic_review
+    sources:
+      - tests/fixtures/product-contract/typescript-dot
+    select: workflow_review
+    expected:
+      stage: instrumentation_ready
+      opportunity_ids:
+        - review_choose
+        - workflow_review
+      candidate_actions:
+        - escalate
+        - lgtm
+        - revise
+      minimum_capture_points: 3
+
+  - scenario_id: documents_only_cold_start
+    archetype: documents_only
+    mode: cold_scan_with_proposal
+    system_id: support_operations
+    sources:
+      - tests/fixtures/product-contract/documents-only
+    proposal:
+      opportunity_id: support_request_disposition
+      type: bounded_semantic_decision
+      actor_type: human
+      source: tests/fixtures/product-contract/documents-only/SOP.md
+      line_start: 5
+      line_end: 9
+      candidate_actions:
+        - answer
+        - request_information
+        - escalate
+    expected:
+      stage: hypotheses_ready
+      opportunity_ids:
+        - support_request_disposition
+      candidate_actions:
+        - answer
+        - escalate
+        - request_information
+
+  - scenario_id: mixed_operating_material
+    archetype: mixed_material
+    mode: cold_scan
+    system_id: mixed_operations
+    sources:
+      - tests/fixtures/product-contract/mixed
+    expected:
+      stage: hypotheses_ready
+      opportunity_types:
+        - bounded_semantic_decision
+        - deterministic_rule
+        - open_generation
+      source_kinds:
+        - code
+        - document
+        - schema_or_data
+
+  - scenario_id: expensive_llm_router_audit
+    archetype: expensive_llm_call
+    mode: llm_call_audit
+    source: tests/fixtures/product-contract/llm-audit/router.py
+    expected:
+      minimum_candidates: 1
+      bounded_output: true
+      semantic_interpretation_required: true
+      review_status: candidate
+
+  - scenario_id: resolved_shipment_history
+    archetype: resolved_history
+    mode: historical_discovery
+    system_id: shipment_triage
+    sources:
+      - examples/discovery-input/sop.md
+    cases: examples/discovery-input/cases.jsonl
+    surface_field: decision_type
+    expected:
+      stage: awaiting_review
+      selected_surface: shipment_exception

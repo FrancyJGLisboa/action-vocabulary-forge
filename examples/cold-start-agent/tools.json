@@ -1,0 +1,8 @@
+{
+  "tools": [
+    {"name": "search_more", "description": "Retrieve additional evidence."},
+    {"name": "revise", "description": "Revise the current draft."},
+    {"name": "accept", "description": "Accept the supported draft."},
+    {"name": "escalate", "description": "Hand the case to a human reviewer."}
+  ]
+}

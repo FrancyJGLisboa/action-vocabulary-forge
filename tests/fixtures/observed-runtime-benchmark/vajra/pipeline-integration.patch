@@ -1,0 +1,29 @@
+diff --git a/orchestrator/src/pipeline.ts b/orchestrator/src/pipeline.ts
+index 7cf0c3e..0c1d79d 100644
+--- a/orchestrator/src/pipeline.ts
++++ b/orchestrator/src/pipeline.ts
+@@ -6,6 +6,7 @@ import { CollectionStore, collectionScope } from "./collections";
+ import { parseDotGraph } from "./dot-parser";
+ import { VajraEventBus } from "./events";
+ import { runFanOutStage } from "./fanout";
++import { observePlanReviewDecision } from "./forge-observation";
+ import {
+   buildTraversalGraph,
+   countCompletedNodeVisits,
+@@ -639,6 +640,16 @@ export class LocalPipelineRunner implements PipelineRunnerInterface {
+         }),
+         label: outcome.label,
+       });
++      await observePlanReviewDecision({
++        issueIdentifier: opts.issue.identifier,
++        attempt: opts.attempt,
++        stageId: opts.stage.id,
++        visit: opts.visitCount,
++        stageStatus,
++        selectedAction: outcome.label,
++        availableActions: opts.outgoingEdges.map((edge) => edge.attrs.on_label),
++        nextStageId: nextNodeId,
++      });
+     } catch (error) {
+       const errorMessage = error instanceof Error ? error.message : String(error);
+       return this.finishStageIteration({

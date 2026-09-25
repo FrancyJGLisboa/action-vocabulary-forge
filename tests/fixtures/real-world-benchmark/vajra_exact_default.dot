@@ -1,0 +1,3 @@
+  review_plan -> code [on_label="lgtm"]
+  review_plan -> plan [on_label="revise"]
+  review_plan -> escalate [on_label="escalate"]

@@ -1,0 +1,89 @@
+schema_version: "1.0"
+benchmark_id: public-work-system-reconstruction-v1
+systems:
+  - system_id: pydantic_ai_contribution_work
+    repository: https://github.com/pydantic/pydantic-ai
+    commit: 92e0b457bd1628d17e959f9b12d74568946a2709
+    license: MIT
+    proposal_file: pydantic-ai/proposal.yaml
+    proposal_sha256: 889d64d466be5db4fdfeeed58b6585b6cde936676e455e97d5baf1cf711b7581
+    sources:
+      - source_id: contributing
+        kind: policy_document
+        evidence_status: declared
+        file: pydantic-ai/contributing.md
+        sha256: f5a8caeaa25007ad03a871fb961b340afc36506e7b6847e451d2f9aa50d5ff92
+        extraction: {mode: exact_line_segments, ranges: [[9, 14], [38, 44], [78, 82]]}
+        url: https://github.com/pydantic/pydantic-ai/blob/92e0b457bd1628d17e959f9b12d74568946a2709/docs/contributing.md
+      - source_id: attention_workflow
+        kind: agentic_workflow
+        evidence_status: declared
+        file: pydantic-ai/attention-triage.md
+        sha256: b91649ec5206b96ed38ba8b7f7bdd5421320d93760119b1dd0336b35f6b42ae0
+        extraction: {mode: exact_line_segments, ranges: [[3, 4], [43, 73], [149, 169]]}
+        url: https://github.com/pydantic/pydantic-ai/blob/92e0b457bd1628d17e959f9b12d74568946a2709/.github/workflows/pydantic-ai-attention-triage.md
+      - source_id: history
+        kind: public_work_history
+        evidence_status: observed
+        file: pydantic-ai/history.jsonl
+        sha256: 0c0ed4a3d36c911a3f3c592f7545d3991bd8d7f31a1ed3e7de64bf27caecbf3d
+        captured_at: "2026-09-25T16:00:00Z"
+        urls:
+          - https://github.com/pydantic/pydantic-ai/issues/8780
+          - https://github.com/pydantic/pydantic-ai/pull/8781
+          - https://github.com/pydantic/pydantic-ai/issues/8717
+          - https://github.com/pydantic/pydantic-ai/pull/8730
+          - https://github.com/pydantic/pydantic-ai/issues/8734
+          - https://github.com/pydantic/pydantic-ai/pull/8749
+    expected:
+      minimum_nodes: 10
+      minimum_decisions: 2
+      minimum_source_kinds_per_workflow: 2
+      repeated_workflows: 1
+
+  - system_id: openai_agents_contribution_work
+    repository: https://github.com/openai/openai-agents-python
+    commit: 74636ac9b9c5b7fe9e2e4ca62daff59248769c02
+    license: MIT
+    proposal_file: openai-agents-python/proposal.yaml
+    proposal_sha256: 29ee21c37e86c702354c66a401d308c69a4a46a5c3fa7812be2d6acd5e9b11a6
+    sources:
+      - source_id: contributing
+        kind: policy_document
+        evidence_status: declared
+        file: openai-agents-python/contributing.md
+        sha256: 995690b921d2f33336702fd0ba2c964078e7d6ea51c0311fe8b8c6ed801c686b
+        extraction: {mode: exact_line_segments, ranges: [[5, 19], [73, 80]]}
+        url: https://github.com/openai/openai-agents-python/blob/74636ac9b9c5b7fe9e2e4ca62daff59248769c02/CONTRIBUTING.md
+      - source_id: issues_workflow
+        kind: deterministic_workflow
+        evidence_status: declared
+        file: openai-agents-python/issues-workflow.yml
+        sha256: c1980be70ebdd3ad9987fa106a44d0b55e39d5caffa3bef59010005ee63005f0
+        extraction: {mode: exact_line_segments, ranges: [[1, 28]]}
+        url: https://github.com/openai/openai-agents-python/blob/74636ac9b9c5b7fe9e2e4ca62daff59248769c02/.github/workflows/issues.yml
+      - source_id: pr_template
+        kind: interface_template
+        evidence_status: declared
+        file: openai-agents-python/pull-request-template.md
+        sha256: e8022d3dbe6abf102089a5fe905b13055d189fd9ce6fffc990c58d25299b4428
+        extraction: {mode: exact_line_segments, ranges: [[1, 19]]}
+        url: https://github.com/openai/openai-agents-python/blob/74636ac9b9c5b7fe9e2e4ca62daff59248769c02/.github/PULL_REQUEST_TEMPLATE/pull_request_template.md
+      - source_id: history
+        kind: public_work_history
+        evidence_status: observed
+        file: openai-agents-python/history.jsonl
+        sha256: 6e0f0429ead3045c35eee75b337dbd40b58b1dc2c44eda23ba8135ac4ce70283
+        captured_at: "2026-09-25T16:00:00Z"
+        urls:
+          - https://github.com/openai/openai-agents-python/issues/5160
+          - https://github.com/openai/openai-agents-python/pull/5163
+          - https://github.com/openai/openai-agents-python/issues/5159
+          - https://github.com/openai/openai-agents-python/pull/5164
+          - https://github.com/openai/openai-agents-python/issues/5141
+          - https://github.com/openai/openai-agents-python/pull/5142
+    expected:
+      minimum_nodes: 10
+      minimum_decisions: 3
+      minimum_source_kinds_per_workflow: 2
+      repeated_workflows: 1

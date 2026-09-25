@@ -1,0 +1,304 @@
+schema_version: "1.0"
+benchmark_id: real-world-benchmark-v1
+thresholds:
+  precision_min: 0.90
+  recall_min: 0.90
+  specificity_min: 0.90
+  archetype_recall_min: 0.50
+entries:
+  - entry_id: langgraph_style_python_router
+    archetype: source_code
+    source_file: python_router.py
+    source_url: https://github.com/langchain-ai/langgraph
+    commit: 7daa3ab49d678a5da75edb08baa87db4a2be52c3
+    license: MIT (upstream repository)
+    source_locator: frozen excerpt, lines 1-4
+    raw_url: null
+    provenance_status: synthetic
+    source_sha256: 5c064c16ef3f3d9efb4e6ffbccc41f5ee256f6e06d8f93af7d4b436fac4fe53d
+    reviewed_excerpt: 'REVIEW_ACTIONS = ["accept", "revise", "escalate"] ... return choose(state, REVIEW_ACTIONS)'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [accept, revise, escalate]
+    reviewer_rationale: Explicit finite vocabulary is passed to a chooser; the excerpt supports a bounded semantic decision.
+  - entry_id: vajra_agent_workflow
+    archetype: agentic_workflow
+    source_file: agent_workflow.ts
+    source_url: https://github.com/zamana-inc/vajra
+    commit: 0437bff9af3750c9e175df1bde3103fb9885d3d1
+    license: MIT (upstream repository)
+    source_locator: frozen excerpt, lines 1-5
+    raw_url: null
+    provenance_status: synthetic
+    source_sha256: 810cc1c8cf0db85a970307aca19161a5e8020f6c07a198e2a2eb3089daa13aeb
+    reviewed_excerpt: 'REVIEW_ACTIONS = ["lgtm", "revise", "escalate"] ... route(state, REVIEW_ACTIONS)'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [lgtm, revise, escalate]
+    reviewer_rationale: Agent review labels are explicitly bounded and routed by code.
+  - entry_id: vajra_workflow_transitions
+    archetype: agentic_workflow
+    source_file: agent_workflow.dot
+    source_url: https://github.com/zamana-inc/vajra
+    commit: 0437bff9af3750c9e175df1bde3103fb9885d3d1
+    license: MIT (upstream repository)
+    source_locator: frozen excerpt, lines 1-5
+    raw_url: null
+    provenance_status: synthetic
+    source_sha256: 18464fef392514f303ca91944005e279aebd478716e5732b3e199e88739d15f0
+    reviewed_excerpt: 'review has labelled transitions lgtm, revise, escalate'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [lgtm, revise, escalate]
+    reviewer_rationale: Three labelled outgoing workflow transitions define a bounded decision surface.
+  - entry_id: expensive_llm_router
+    archetype: expensive_llm_call
+    source_file: llm_router.py
+    source_url: https://github.com/openai/openai-cookbook
+    commit: 5986832a554169dc87285b1b0b396941f235a62e
+    license: MIT (upstream repository)
+    source_locator: frozen excerpt, lines 1-5
+    raw_url: null
+    provenance_status: synthetic
+    source_sha256: 007d0823f9ea8a2325921ddf7b7876b0977770824be19842656a9bf419082bcc
+    reviewed_excerpt: 'model.generate asks for exactly one of accept, revise, or escalate'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [accept, revise, escalate]
+    reviewer_rationale: The expensive call is generative in implementation but its requested output is a finite router; this is a JEV candidate pending observation.
+  - entry_id: operating_note_only
+    archetype: documents_only
+    source_file: operating_note.md
+    source_url: https://github.com/owasp/www-project-ai-security-and-privacy-guide
+    commit: b21670377de4d2077f7e72073a04df4fa7092e09
+    license: CC BY-SA 4.0 (upstream repository)
+    source_locator: frozen excerpt, lines 1-4
+    raw_url: null
+    provenance_status: synthetic
+    source_sha256: f33acf07b631bb92e88203061fd42fbb81511736e4882fda5de9d139c123d472
+    reviewed_excerpt: 'reviewer decides ready, revision, or escalation'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [ready, revision, escalation]
+    reviewer_rationale: The excerpt documents a bounded human decision but has no executable structure; it should be a System 2 hypothesis, not an automatic scan result.
+  - entry_id: ordinary_open_generation
+    archetype: open_generation_negative
+    source_file: open_generation.py
+    source_url: https://github.com/openai/openai-cookbook
+    commit: 5986832a554169dc87285b1b0b396941f235a62e
+    license: MIT (upstream repository)
+    source_locator: frozen excerpt, lines 1-2
+    raw_url: null
+    provenance_status: synthetic
+    source_sha256: 4d61062903a49fcf0fe91bc2b85a107e5ff446855424b7f9cd5023504950dec5
+    reviewed_excerpt: 'model.generate asks for a clear answer, with no bounded answer set'
+    expected_shape: open_generation
+    reviewer_rationale: This is ordinary open-ended generation and must not be converted into a JEV choice.
+  - entry_id: incidental_document_list
+    archetype: incidental_list_negative
+    source_file: incidental_list.md
+    source_url: https://github.com/owasp/www-project-ai-security-and-privacy-guide
+    commit: b21670377de4d2077f7e72073a04df4fa7092e09
+    license: CC BY-SA 4.0 (upstream repository)
+    source_locator: frozen excerpt, lines 1-4
+    raw_url: null
+    provenance_status: synthetic
+    source_sha256: 33fe21b65928a843dda34f2dc5314428ebb96c8f654618ffc5cd0f41e461713b
+    reviewed_excerpt: 'a reference list of tools, not alternatives for an operational decision'
+    expected_shape: not_a_decision
+    reviewer_rationale: A list explicitly described as reference material is not a decision surface.
+  - entry_id: deterministic_threshold_rule
+    archetype: deterministic_rule_negative
+    source_file: deterministic_rule.py
+    source_url: https://github.com/langchain-ai/langgraph
+    commit: 7daa3ab49d678a5da75edb08baa87db4a2be52c3
+    license: MIT (upstream repository)
+    source_locator: frozen excerpt, lines 1-4
+    raw_url: null
+    provenance_status: synthetic
+    source_sha256: 0f3dd5731cdb30641a14d36d20bf7e8f371c991573b8ea66acf21b78187105af
+    reviewed_excerpt: 'score >= 0.80 returns a boolean; no semantic vocabulary is required'
+    expected_shape: deterministic_rule
+    reviewer_rationale: Exact numeric threshold logic belongs in deterministic code, not JEV.
+  - entry_id: vajra_exact_review_labels
+    archetype: agentic_workflow_external
+    source_file: vajra_exact_review.md
+    source_url: https://github.com/zamana-inc/vajra
+    commit: 0437bff9af3750c9e175df1bde3103fb9885d3d1
+    license: MIT (upstream repository)
+    source_locator: orchestrator/skills/vajra-plan-review/SKILL.md lines 70-74
+    raw_url: https://raw.githubusercontent.com/zamana-inc/vajra/0437bff9af3750c9e175df1bde3103fb9885d3d1/orchestrator/skills/vajra-plan-review/SKILL.md
+    provenance_status: external_exact
+    provider_ecosystem: workflow
+    source_sha256: f1e3bb8b98bed916c293b2779f2e996adf0505075c69c753f586f0823b8c6a8d
+    upstream_line_start: 70
+    upstream_line_end: 74
+    reviewed_excerpt: 'Exact lines 70-74 from the pinned upstream skill file.'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [lgtm, revise, escalate]
+    reviewer_rationale: Upstream explicitly defines a structured decision with three labels.
+  - entry_id: vajra_exact_workflow_edges
+    archetype: agentic_workflow_external
+    source_file: vajra_exact_default.dot
+    source_url: https://github.com/zamana-inc/vajra
+    commit: 0437bff9af3750c9e175df1bde3103fb9885d3d1
+    license: MIT (upstream repository)
+    source_locator: pipelines/default.dot lines 65-67
+    raw_url: https://raw.githubusercontent.com/zamana-inc/vajra/0437bff9af3750c9e175df1bde3103fb9885d3d1/pipelines/default.dot
+    provenance_status: external_exact
+    provider_ecosystem: workflow
+    source_sha256: 13b794e29e8f8ff16db0048e9234d9334c1bf6a223ab3c2ce9f66f1a4e7c7350
+    upstream_line_start: 65
+    upstream_line_end: 67
+    reviewed_excerpt: 'Exact labelled transitions from the pinned Vajra default pipeline.'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [lgtm, revise, escalate]
+    reviewer_rationale: Three outgoing on_label transitions form an explicit bounded workflow choice.
+  - entry_id: openai_exact_open_generation
+    archetype: expensive_llm_external
+    source_file: openai_exact_prompt.md
+    source_url: https://github.com/openai/openai-cookbook
+    commit: 5986832a554169dc87285b1b0b396941f235a62e
+    license: MIT (upstream repository)
+    source_locator: examples/agents_api/apps/document_review/agent.py lines 172-178
+    raw_url: https://raw.githubusercontent.com/openai/openai-cookbook/5986832a554169dc87285b1b0b396941f235a62e/examples/agents_api/apps/document_review/agent.py
+    provenance_status: external_exact
+    provider_ecosystem: openai_sdk
+    source_sha256: c4b1fb343db3b986b4f7ff686b311b0376df86f2bcadf4cefadd7b885bc65676
+    upstream_line_start: 172
+    upstream_line_end: 178
+    reviewed_excerpt: 'Exact prompt text asks for review and a summary, without a bounded answer vocabulary.'
+    expected_shape: open_generation
+    reviewer_rationale: This is an expensive agent prompt but it remains open-ended generation and must not be promoted to JEV choice.
+  - entry_id: langgraph_exact_deterministic_branch
+    archetype: deterministic_rule_external
+    source_file: langgraph_exact_branch.py
+    source_url: https://github.com/langchain-ai/langgraph
+    commit: 7daa3ab49d678a5da75edb08baa87db4a2be52c3
+    license: MIT (upstream repository)
+    source_locator: libs/cli/uv-examples/simple/src/agent/graph.py lines 18-21
+    raw_url: https://raw.githubusercontent.com/langchain-ai/langgraph/7daa3ab49d678a5da75edb08baa87db4a2be52c3/libs/cli/uv-examples/simple/src/agent/graph.py
+    provenance_status: external_exact
+    provider_ecosystem: langgraph
+    source_sha256: 472b79ac6a145fae60ca9629caec4e739bf7d732b83bdee2e6e3d289d8a8bf1d
+    upstream_line_start: 18
+    upstream_line_end: 21
+    reviewed_excerpt: 'Exact conditional branch from the pinned LangGraph example.'
+    expected_shape: deterministic_rule
+    reviewer_rationale: The branch is an exact state check and belongs to deterministic code, not JEV.
+  - entry_id: vajra_exact_code_review_labels
+    archetype: agentic_workflow_external
+    source_file: vajra_exact_code_review.dot
+    source_url: https://github.com/zamana-inc/vajra
+    commit: 0437bff9af3750c9e175df1bde3103fb9885d3d1
+    license: MIT (upstream repository)
+    source_locator: pipelines/default.dot lines 69-71
+    raw_url: https://raw.githubusercontent.com/zamana-inc/vajra/0437bff9af3750c9e175df1bde3103fb9885d3d1/pipelines/default.dot
+    provenance_status: external_exact
+    provider_ecosystem: workflow
+    source_sha256: 2259edb1f484e25190589b3c0997791e9743b5924abfe647432e44e53f4fc835
+    upstream_line_start: 69
+    upstream_line_end: 71
+    reviewed_excerpt: 'Exact labelled code-review transitions from the pinned Vajra pipeline.'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [lgtm, revise, escalate]
+    reviewer_rationale: A second repeated agentic review surface with explicit bounded labels.
+  - entry_id: anthropic_exact_structured_extraction
+    archetype: structured_extraction_external
+    source_file: anthropic_exact_structured_extraction.md
+    source_url: https://github.com/anthropics/anthropic-cookbook
+    commit: 813fbeec03cdedfda7808529438d1c7af71f26eb
+    license: MIT (upstream repository)
+    source_locator: capabilities/content_moderation/pipeline.py lines 332-341
+    raw_url: https://raw.githubusercontent.com/anthropics/anthropic-cookbook/813fbeec03cdedfda7808529438d1c7af71f26eb/capabilities/content_moderation/pipeline.py
+    provenance_status: external_exact
+    provider_ecosystem: anthropic_sdk
+    source_sha256: 3617f02dd32a86fff57418cb5d5e956f3bdf5cb578fd4087392b08a5bff1e72d
+    upstream_line_start: 332
+    upstream_line_end: 341
+    reviewed_excerpt: 'Exact model call with JSON schema structured extraction, without a finite semantic action choice.'
+    expected_shape: not_a_decision
+    reviewer_rationale: Structured extraction alone is not a bounded decision and must not be promoted to JEV.
+  - entry_id: vercel_exact_structured_object
+    archetype: structured_extraction_external
+    source_file: vercel_exact_structured_object.ts
+    source_url: https://github.com/vercel/ai
+    commit: be877ff2d56eb9f48cc38af49ca7165fb335b5f2
+    license: Apache-2.0 (upstream repository)
+    source_locator: examples/next-openai-pages/app/api/generate-object/route.ts lines 8-15
+    raw_url: https://raw.githubusercontent.com/vercel/ai/be877ff2d56eb9f48cc38af49ca7165fb335b5f2/examples/next-openai-pages/app/api/generate-object/route.ts
+    provenance_status: external_exact
+    provider_ecosystem: vercel_ai_openai
+    source_sha256: 4f94d053126d0ef72ee7b41ef2252aa207fd37c491375f6b8cd56ef516541660
+    upstream_line_start: 8
+    upstream_line_end: 15
+    reviewed_excerpt: 'Exact Vercel AI generateText call with object extraction, not finite semantic routing.'
+    expected_shape: open_generation
+    reviewer_rationale: Structured object fields are not a bounded semantic choice.
+  - entry_id: vercel_exact_tool_agent
+    archetype: open_generation_external
+    source_file: vercel_exact_tool_agent.ts
+    source_url: https://github.com/vercel/ai
+    commit: be877ff2d56eb9f48cc38af49ca7165fb335b5f2
+    license: Apache-2.0 (upstream repository)
+    source_locator: examples/ai-e2e-next/app/api/chat/tool-approval-options/route.ts lines 35-39
+    raw_url: https://raw.githubusercontent.com/vercel/ai/be877ff2d56eb9f48cc38af49ca7165fb335b5f2/examples/ai-e2e-next/app/api/chat/tool-approval-options/route.ts
+    provenance_status: external_exact
+    provider_ecosystem: vercel_ai_anthropic
+    source_sha256: 968a563cdd2ae86c0fc82de6260c8a179f7bfeb791323fb880b8bdb5a6b700e1
+    upstream_line_start: 35
+    upstream_line_end: 39
+    reviewed_excerpt: 'Exact ToolLoopAgent model call with a weather tool, not a bounded semantic router.'
+    expected_shape: open_generation
+    reviewer_rationale: Tool availability is not evidence that the model selects among a finite semantic answer vocabulary.
+  - entry_id: openai_notebook_enum_router
+    archetype: llm_router_external
+    source_file: openai_notebook_enum_cell.py
+    source_url: https://github.com/openai/openai-cookbook
+    commit: 5986832a554169dc87285b1b0b396941f235a62e
+    license: MIT (upstream repository)
+    source_locator: examples/Structured_Outputs_Intro.ipynb cell id ee802699
+    raw_url: https://raw.githubusercontent.com/openai/openai-cookbook/5986832a554169dc87285b1b0b396941f235a62e/examples/Structured_Outputs_Intro.ipynb
+    provenance_status: external_exact
+    provider_ecosystem: openai_sdk
+    extraction_mode: notebook_cell
+    notebook_cell_id: ee802699
+    source_sha256: efcd4e083cc9f9c09fc2174a4120a7b52f3f57ea1efc4862c64aa884085ebf19
+    upstream_line_start: 0
+    upstream_line_end: 0
+    raw_file_sha256: 05731b657039904eec7d55c5a69532a6227fe8b9747a54a19934d993e6d50dde
+    reviewed_excerpt: 'Exact joined cell source contains Category enum shoes/jackets/tops/bottoms and client.chat.completions.create.'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [shoes, jackets, tops, bottoms]
+    reviewer_rationale: Executable OpenAI SDK call selects semantic product category using a finite enum.
+  - entry_id: openai_notebook_open_generation
+    archetype: llm_generation_external
+    source_file: openai_notebook_open_cell.py
+    source_url: https://github.com/openai/openai-cookbook
+    commit: 5986832a554169dc87285b1b0b396941f235a62e
+    license: MIT (upstream repository)
+    source_locator: examples/Structured_Outputs_Intro.ipynb cell id b5f6a7b7
+    raw_url: https://raw.githubusercontent.com/openai/openai-cookbook/5986832a554169dc87285b1b0b396941f235a62e/examples/Structured_Outputs_Intro.ipynb
+    provenance_status: external_exact
+    provider_ecosystem: openai_sdk
+    extraction_mode: notebook_cell
+    notebook_cell_id: b5f6a7b7
+    source_sha256: eb9beea870eddf8e4a1667d821b9110d4ab72fb1cd5af37937302366ca48f1ad
+    upstream_line_start: 0
+    upstream_line_end: 0
+    raw_file_sha256: 05731b657039904eec7d55c5a69532a6227fe8b9747a54a19934d993e6d50dde
+    reviewed_excerpt: 'Exact joined cell source contains an executable JSON-schema math response but no finite semantic choice.'
+    expected_shape: open_generation
+    reviewer_rationale: Structured output shape alone does not make a bounded semantic router.
+  - entry_id: vercel_exact_multi_tool_router
+    archetype: llm_router_external
+    source_file: vercel_exact_multi_tool_router.ts
+    source_url: https://github.com/vercel/ai
+    commit: be877ff2d56eb9f48cc38af49ca7165fb335b5f2
+    license: Apache-2.0 (upstream repository)
+    source_locator: examples/ai-e2e-next/app/api/chat/tools/route.ts lines 22-105
+    raw_url: https://raw.githubusercontent.com/vercel/ai/be877ff2d56eb9f48cc38af49ca7165fb335b5f2/examples/ai-e2e-next/app/api/chat/tools/route.ts
+    provenance_status: external_exact
+    provider_ecosystem: vercel_ai_openai
+    source_sha256: efd0bddcbaecfa872fef403f67c0d3123a1d457f7bf1b42b1bac8a8295bba7a4
+    upstream_line_start: 22
+    upstream_line_end: 105
+    reviewed_excerpt: 'Exact Vercel streamText call and three semantically distinct tools: weather, confirmation, and location.'
+    expected_shape: bounded_semantic_decision
+    expected_actions: [get_weather_information, ask_for_confirmation, get_location]
+    reviewer_rationale: The model call exposes a finite semantic routing vocabulary through three distinct tools; code still owns execution.
